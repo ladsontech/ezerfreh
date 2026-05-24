@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "562553165879",
+    "project_id": "ezerfresh-f87af",
+    "storage_bucket": "ezerfresh-f87af.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:562553165879:android:e29dd9ca5f13ceeccdc7b2",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCD2DchR_hXFflK9lf4OkW5Y0gmr7XUW98"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
