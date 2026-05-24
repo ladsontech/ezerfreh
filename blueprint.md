@@ -1,134 +1,65 @@
-# Ezer Fresh MVP Blueprint
+# Ezer Fresh - Application Blueprint
 
-## 1. Overview
+## Overview
 
-Ezer Fresh is a Flutter-based mobile application for a fresh produce delivery service. This MVP (Minimum Viable Product) will provide core functionalities for three user roles: customers, drivers, and administrators. The application will be built using Flutter and Firebase, with a focus on a clean, scalable, and production-ready architecture.
+Ezer Fresh is a modern, clean, and intuitive mobile application for ordering fresh groceries online. It provides a seamless user experience, from browsing products to placing orders and managing user profiles. The application is built with Flutter and leverages Firebase for backend services, ensuring a scalable and reliable platform.
 
-**Business Goal:** To provide a seamless and efficient platform for ordering fresh fruits, vegetables, herbs, and spices.
+## Project Documentation
 
-**Target Audience:**
--   **Customers:** Individuals and families looking for a convenient way to purchase fresh produce.
--   **Drivers:** Delivery personnel responsible for transporting orders.
--   **Admins:** Business owners or managers who oversee the entire operation.
+This section outlines the style, design, and features implemented in the application from the initial version to the current version.
 
-## 2. Core Technologies
+### Core Technologies & Architecture
 
--   **UI Framework:** Flutter
--   **Backend & Database:** Firebase (Authentication, Cloud Firestore, Firebase Storage, Firebase Cloud Messaging)
--   **State Management:** Riverpod
--   **Routing:** GoRouter
+- **Framework:** Flutter
+- **Backend:** Firebase (Authentication, Firestore)
+- **State Management:** Riverpod
+- **Routing:** `go_router` for declarative navigation.
+- **Architecture:** The project follows a feature-first structure, with a clear separation of concerns between the presentation, domain, and data layers.
 
-## 3. Features & Implementation Plan
+### Key Features Implemented
 
-### 3.1. Authentication
--   [x] Single registration and login page.
--   [x] Firebase Authentication for user management.
--   [x] Store user roles and additional information in a `users` collection in Cloud Firestore.
--   [x] Role-based routing after login using GoRouter.
+1.  **User Authentication:**
+    -   A simple login screen allows users to sign in.
+    -   Firebase Authentication is used to manage user sessions.
 
-### 3.2. Customer Features
--   [x] **Home Screen:**
-    -   Greeting section
-    -   Search bar
-    -   Featured products
-    -   Categories section
-    -   Popular products
-    -   Cart icon with item count
--   [x] **Product System:**
-    -   View products by category.
-    -   Search and filter products.
-    -   Detailed product page with image, description, price, and unit.
-    -   Add to cart with a quantity selector.
--   [x] **Cart System:**
-    -   View and manage items in the cart.
-    -   Update item quantities.
-    -   Calculate and display the total price.
-    -   "Checkout" button.
--   [x] **Checkout:**
-    -   Enter delivery address and phone number.
-    -   "Cash on Delivery" as the only payment method for the MVP.
--   [x] **Orders:**
-    -   Place an order.
-    -   View order history with status tracking.
--   [x] **Bottom Navigation:**
-    -   Home, Categories, Cart, Orders, Profile.
+2.  **Navigation:**
+    -   A modern, animated bottom navigation bar (`google_nav_bar`) provides easy access to the main screens: Home, Cart, Orders, and Profile.
+    -   The navigation is managed by `go_router` which supports deep linking and nested navigation.
 
-### 3.3. Driver Features
--   [x] **Driver Dashboard:**
-    -   View a list of assigned orders.
-    -   Accept or reject orders.
-    -   Update delivery status (e.g., "Picked Up," "On the Way," "Delivered").
-    -   View completed deliveries.
+3.  **Home Screen:**
+    -   Displays a list of product categories.
+    -   Serves as the main entry point of the application.
 
-### 3.4. Admin Features
--   [x] **Admin Dashboard:**
-    -   Overview of key metrics (e.g., total orders, pending orders).
--   [x] **Product Management:**
-    -   CRUD (Create, Read, Update, Delete) operations for products.
-    -   Upload product images to Firebase Storage.
-    -   Update stock and price.
--   [x] **Order Management:**
-    -   View all orders.
-    -   Update order status.
-    -   Assign drivers to orders.
-    -   Cancel orders.
+4.  **Product & Category Views:**
+    -   Users can tap a category on the home screen to view a list of products within that category.
 
-## 4. Project Structure
+5.  **Profile Management (Onboarding Flow):**
+    -   **Profile Screen:** A dedicated screen for users to view their profile information.
+    -   **Onboarding for New Users:** If a user has not created a profile, they are presented with an onboarding screen (`CreateProfileScreen`) to enter their name, contact information, and address.
+    -   **Profile Editing:** Existing users can edit their profile information.
+    -   **Data Persistence:** User profile data is securely stored in Firestore.
 
-```
-lib/
-  core/
-    constants/
-    models/
-    providers/
-    services/
-    utils/
-    widgets/
-  features/
-    auth/
-      data/
-      domain/
-      presentation/
-    customer/
-      presentation/
-    driver/
-      presentation/
-    admin/
-      presentation/
-    products/
-      data/
-      domain/
-      presentation/
-    orders/
-      data/
-      domain/
-      presentation/
-    cart/
-      data/
-      domain/
-      presentation/
-    categories/
-      data/
-      domain/
-      presentation/
-  main.dart
-```
+6.  **Orders Screen:**
+    -   A placeholder screen for users to view their past and current orders.
 
-## 5. Data Models
+7.  **Cart Screen:**
+    -   A placeholder screen for the user's shopping cart.
 
--   **User:** `uid`, `name`, `phone`, `email`, `role`
--   **Product:** `id`, `name`, `category`, `price`, `unit`, `description`, `image`, `stock`, `isAvailable`
--   **Order:** `orderId`, `customerId`, `driverId`, `items`, `totalPrice`, `status`, `paymentMethod`, `deliveryAddress`, `createdAt`
--   **Category:** `id`, `name`
--   **CartItem:** `productId`, `quantity`
+### Design & UI/UX
 
-## 6. UI/UX Design
+- **Visual Style:** The app aims for a clean, modern aesthetic with a focus on usability.
+- **Component Library:** Utilizes Material Design components, enhanced with custom styling and animations.
+- **Navigation:** The use of `google_nav_bar` provides a visually appealing and interactive navigation experience.
 
--   **Theme:** Clean, modern, and fresh, with a green and organic color palette.
--   **Layout:** Responsive and intuitive layouts for all user roles.
--   **Components:** A library of reusable widgets for consistency.
--   **Feedback:** Loading indicators, empty states, and error messages.
+## Current Task
 
-## 7. Current Task
+**Task:** Complete the profile and onboarding features.
 
-The current task is to set up the initial project structure, including creating the necessary folders and files for the Ezer Fresh application. I will then proceed with adding the required dependencies to the `pubspec.yaml` file.
+**Status:** **Completed.**
+
+- **Steps Taken:**
+    1.  Created the `CreateProfileScreen` for user onboarding.
+    2.  Updated the `ProfileScreen` to check for existing profiles and display either the user's data or a prompt to create a profile.
+    3.  Added an "Edit" functionality for existing profiles.
+    4.  Integrated with Firestore to save and retrieve user profile data.
+    5.  Updated the `go_router` configuration to include the new `CreateProfileScreen` route.
