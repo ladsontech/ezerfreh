@@ -1,0 +1,75 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class OrderItem {
+  final String productId;
+  final String name;
+  final int quantity;
+  final double price;
+
+  OrderItem({
+    required this.productId,
+    required this.name,
+    required this.quantity,
+    required this.price,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'productId': productId,
+      'name': name,
+      'quantity': quantity,
+      'price': price,
+    };
+  }
+
+  factory OrderItem.fromMap(Map<String, dynamic> map) {
+    return OrderItem(
+      productId: map['productId'] ?? '',
+      name: map['name'] ?? '',
+      quantity: map['quantity'] ?? 0,
+      price: (map['price'] ?? 0.0).toDouble(),
+    );
+  }
+}
+
+class OrderModel {
+  final String id;
+  final String userId;
+  final List<OrderItem> items;
+  final double totalAmount;
+  final DateTime createdAt;
+  final String status;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
+
+  OrderModel({
+    required this.id,
+    required this.userId,
+    required this.items,
+    required this.totalAmount,
+    required this.createdAt,
+    required this.status,
+    this.address,
+    this.latitude,
+    this.longitude,
+  });
+
+  factory OrderModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return OrderModel(
+      id: doc.id,
+      userId: data['userId'] ?? '',
+      items: (data['items'] as List<dynamic>?)
+              ?.map((item) => OrderItem.fromMap(item as Map<String, dynamic>))
+              .toList() ??
+          [],
+      totalAmount: (data['totalAmount'] ?? 0.0).toDouble(),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      status: data['status'] ?? 'Pending',
+      address: data['address'],
+      latitude: (data['latitude'] as num?)?.toDouble(),
+      longitude: (data['longitude'] as num?)?.toDouble(),
+    );
+  }
+}

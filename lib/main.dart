@@ -1,4 +1,5 @@
 import 'package:ezer_fresh/src/core/router/app_router.dart';
+import 'package:ezer_fresh/src/core/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -7,24 +8,29 @@ import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize Push Notifications
+  await NotificationService().initialize();
+  
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
 
     final lightTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
       textTheme: GoogleFonts.latoTextTheme(textTheme).copyWith(
-        displayLarge: GoogleFonts.oswald(fontSize: 57, fontWeight: FontWeight.bold),
+        displayLarge: GoogleFonts.oswald(
+          fontSize: 57,
+          fontWeight: FontWeight.bold,
+        ),
         titleLarge: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
         bodyMedium: GoogleFonts.lato(fontSize: 14),
         bodySmall: GoogleFonts.lato(fontSize: 12),
@@ -32,7 +38,11 @@ class MyApp extends StatelessWidget {
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        titleTextStyle: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+        titleTextStyle: GoogleFonts.lato(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
       cardTheme: CardThemeData(
@@ -43,6 +53,8 @@ class MyApp extends StatelessWidget {
       ),
     );
 
+    final appRouter = ref.watch(appRouterProvider);
+
     return MaterialApp.router(
       title: 'Ezer Fresh',
       debugShowCheckedModeBanner: false,
@@ -51,3 +63,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

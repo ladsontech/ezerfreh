@@ -1,8 +1,7 @@
-
 import 'package:flutter/material.dart';
-import 'package:myapp/src/presentation/features/admin/views/admin_screen.dart';
-import 'package:myapp/src/presentation/features/home/views/home_screen.dart';
-import 'package:myapp/src/presentation/features/rider/views/rider_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/admin/views/admin_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/home/views/home_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/rider/views/rider_screen.dart';
 
 class BottomNavigation extends StatefulWidget {
   final String userType;
@@ -43,21 +42,45 @@ class _BottomNavigationState extends State<BottomNavigation> {
     switch (widget.userType) {
       case 'admin':
         return [
-          const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          const BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Orders'),
-          const BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.list),
+            label: 'Orders',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ];
       case 'rider':
         return [
-          const BottomNavigationBarItem(icon: Icon(Icons.delivery_dining), label: 'Deliveries'),
-          const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-          const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.delivery_dining),
+            label: 'Deliveries',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ];
       default:
         return [
           const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          const BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-          const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Cart',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ];
     }
   }

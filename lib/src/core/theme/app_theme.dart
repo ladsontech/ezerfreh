@@ -13,20 +13,20 @@ final ThemeData appTheme = ThemeData(
   textTheme: GoogleFonts.latoTextTheme(),
   appBarTheme: AppBarTheme(
     backgroundColor: primaryColor,
-    titleTextStyle: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+    titleTextStyle: GoogleFonts.lato(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: primaryColor,
       foregroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
   ),
   inputDecorationTheme: InputDecorationTheme(
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
   ),
 );

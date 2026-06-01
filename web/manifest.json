@@ -1,11 +1,11 @@
 {
-    "name": "myapp",
-    "short_name": "myapp",
+    "name": "Ezer Fresh",
+    "short_name": "Ezer Fresh",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#4CAF50",
+    "theme_color": "#4CAF50",
+    "description": "Fresh fruits and vegetables delivered to your doorstep.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

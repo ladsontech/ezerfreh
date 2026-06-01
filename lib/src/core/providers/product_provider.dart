@@ -1,20 +1,74 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final productsProvider = FutureProvider.family<List<Product>, String>((ref, categoryId) async {
-  // For now, we'll use dummy data. Later, this will be replaced with a real API call.
-  await Future.delayed(const Duration(seconds: 1));
+final productsProvider = StreamProvider.family<List<Product>, String>((
+  ref,
+  categoryId,
+) {
+  final firestore = FirebaseFirestore.instance;
 
-  final allProducts = [
-    const Product(id: '1', name: 'Carrot', categoryId: '1', imageUrl: 'assets/vegetables.png', price: 1.99),
-    const Product(id: '2', name: 'Broccoli', categoryId: '1', imageUrl: 'assets/vegetables.png', price: 2.49),
-    const Product(id: '3', name: 'Apple', categoryId: '2', imageUrl: 'assets/fruits.png', price: 0.99),
-    const Product(id: '4', name: 'Banana', categoryId: '2', imageUrl: 'assets/fruits.png', price: 0.59),
-    const Product(id: '5', name: 'Mint', categoryId: '3', imageUrl: 'assets/herbs.png', price: 1.29),
-    const Product(id: '6', name: 'Cilantro', categoryId: '3', imageUrl: 'assets/herbs.png', price: 1.49),
-    const Product(id: '7', name: 'Cinnamon', categoryId: '4', imageUrl: 'assets/spices.png', price: 3.99),
-    const Product(id: '8', name: 'Turmeric', categoryId: '4', imageUrl: 'assets/spices.png', price: 4.49),
-  ];
-
-  return allProducts.where((product) => product.categoryId == categoryId).toList();
+  print('Fetching products for category: $categoryId');
+  return firestore
+      .collection('products')
+      .where('categoryId', isEqualTo: categoryId)
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs.map((doc) {
+          final data = doc.data();
+          final unit =
+              data['unit'] ?? _getDefaultUnit(data['categoryId'] ?? categoryId);
+          return Product(
+            id: doc.id,
+            name: data['name'] ?? 'N/A',
+            categoryId: data['categoryId'] ?? categoryId,
+            categoryName: data['categoryName'],
+            imageUrl: data['imageUrl'] ?? '',
+            price: (data['price'] ?? 0.0).toDouble(),
+            unit: unit,
+            description: data['description'] ?? 'No description available.',
+          );
+        }).toList();
+      });
 });
+
+final allProductsProvider = StreamProvider<List<Product>>((ref) {
+  final firestore = FirebaseFirestore.instance;
+
+  return firestore
+      .collection('products')
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs.map((doc) {
+          final data = doc.data();
+          final unit =
+              data['unit'] ?? _getDefaultUnit(data['categoryId'] ?? '1');
+          return Product(
+            id: doc.id,
+            name: data['name'] ?? 'N/A',
+            categoryId: data['categoryId'] ?? '1',
+            categoryName: data['categoryName'],
+            imageUrl: data['imageUrl'] ?? '',
+            price: (data['price'] ?? 0.0).toDouble(),
+            unit: unit,
+            description: data['description'] ?? 'No description available.',
+          );
+        }).toList();
+      });
+});
+
+String _getDefaultUnit(String categoryId) {
+  switch (categoryId) {
+    case '1':
+      return '/ Kg';
+    case '2':
+      return '/ Piece';
+    case '3':
+      return '/ Bundle';
+    case '4':
+      return '/ Pack';
+    default:
+      return '/ Unit';
+  }
+}

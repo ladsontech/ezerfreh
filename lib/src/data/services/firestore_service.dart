@@ -8,6 +8,6 @@ class FirestoreService {
   }
 
   Future<void> setUserProfile(String uid, Map<String, dynamic> data) {
-    return _firestore.collection('users').doc(uid).set(data);
+    return _firestore.collection('users').doc(uid).set(data, SetOptions(merge: true));
   }
 }
