@@ -3,6 +3,7 @@ import 'package:ezer_fresh/src/presentation/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key});
@@ -15,12 +16,41 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   final _nameController = TextEditingController();
   final _contactController = TextEditingController();
   final _addressController = TextEditingController();
+  final _apartmentSuiteController = TextEditingController();
+  
+  bool _isInitialized = false;
+  double? _latitude;
+  double? _longitude;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      final user = ref.read(authServiceProvider).currentUser;
+      if (user != null) {
+        ref.read(userProfileProvider(user.uid)).whenData((doc) {
+          if (doc.exists && doc.data() != null) {
+            final data = doc.data() as Map<String, dynamic>;
+            _nameController.text = data['name'] ?? '';
+            _contactController.text = data['contact'] ?? '';
+            _addressController.text = data['address'] ?? '';
+            _apartmentSuiteController.text = data['apartmentSuite'] ?? '';
+            _latitude = (data['latitude'] as num?)?.toDouble();
+            _longitude = (data['longitude'] as num?)?.toDouble();
+            if (mounted) setState(() {});
+          }
+        });
+      }
+      _isInitialized = true;
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _contactController.dispose();
     _addressController.dispose();
+    _apartmentSuiteController.dispose();
     super.dispose();
   }
 
@@ -29,22 +59,37 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.sizeOf(context).height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
-          ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: LocationPicker(
-          onLocationSelected: (latLng, address) {
-            setState(() {
-              _addressController.text = address;
-            });
-            Navigator.pop(context);
-          },
+        child: Container(
+          height: MediaQuery.sizeOf(context).height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(25),
+              topRight: Radius.circular(25),
+            ),
+          ),
+          child: LocationPicker(
+            initialAddress: _addressController.text.isNotEmpty ? _addressController.text : null,
+            initialLatLng: (_latitude != null && _longitude != null)
+                ? LatLng(_latitude!, _longitude!)
+                : null,
+            initialApartmentSuite: _apartmentSuiteController.text.isNotEmpty
+                ? _apartmentSuiteController.text
+                : null,
+            onLocationSelected: (latLng, address, apartmentSuite) {
+              setState(() {
+                _addressController.text = address;
+                _apartmentSuiteController.text = apartmentSuite;
+                _latitude = latLng.latitude;
+                _longitude = latLng.longitude;
+              });
+              Navigator.pop(context);
+            },
+          ),
         ),
       ),
     );
@@ -89,6 +134,13 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
               onTap: _openLocationPicker,
               suffix: const Icon(Icons.map_outlined, color: Color(0xFF2E7D32)),
             ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _apartmentSuiteController,
+              label: 'Apartment, Suite, Plot, or Floor (Optional)',
+              hint: 'e.g., Apt 3B, Plot 14, or directions',
+              icon: Icons.apartment_outlined,
+            ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
@@ -98,6 +150,9 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                     'name': _nameController.text,
                     'contact': _contactController.text,
                     'address': _addressController.text,
+                    'apartmentSuite': _apartmentSuiteController.text,
+                    'latitude': _latitude,
+                    'longitude': _longitude,
                     'isProfileComplete': true,
                   });
                   Navigator.pop(context);

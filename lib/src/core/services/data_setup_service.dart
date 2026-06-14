@@ -1,21 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class DataSetupService {
   static Future<void> initializeInventory() async {
-    print('DEBUG: Starting Idempotent Full Initialization...');
+    debugPrint('DEBUG: Starting Idempotent Full Initialization...');
     try {
       await uploadVegetables();
       await uploadFruits();
       await forceRepairSpecialized();
-      print('DEBUG: Full Initialization Successful!');
+      debugPrint('DEBUG: Full Initialization Successful!');
     } catch (e) {
-      print('DEBUG ERROR in Full Init: $e');
+      debugPrint('DEBUG ERROR in Full Init: $e');
       rethrow;
     }
   }
 
   static Future<void> cleanupAllDuplicates() async {
-    print('DEBUG: Starting Global Atomic Deduplication...');
+    debugPrint('DEBUG: Starting Global Atomic Deduplication...');
     final firestore = FirebaseFirestore.instance;
     final collection = firestore.collection('products');
     
@@ -54,7 +55,7 @@ class DataSetupService {
     }
     
     if (batchCount > 0) await batch.commit();
-    print('DEBUG: Atomic Deduplication Complete. Removed $deletedCount items.');
+    debugPrint('DEBUG: Atomic Deduplication Complete. Removed $deletedCount items.');
   }
 
   static Future<void> uploadVegetables() async {
@@ -198,7 +199,7 @@ class DataSetupService {
       {"name": "Pilau masala", "price": 40000.0, "unit": "/ 500g"},
     ];
 
-    print('DEBUG: Syncing Herbs & Spices Idempotently...');
+    debugPrint('DEBUG: Syncing Herbs & Spices Idempotently...');
     await _bulkAddIdempotent(herbs, '3', 'assets/herbs.png');
     await _bulkAddIdempotent(spices, '4', 'assets/spices.png');
   }
@@ -237,7 +238,7 @@ class DataSetupService {
     }
     
     if (batchCount > 0) await batch.commit();
-    print('DEBUG: Idempotent sync complete for Category $catId.');
+    debugPrint('DEBUG: Idempotent sync complete for Category $catId.');
   }
 
   static Future<void> uploadVegetablesLegacy() async => initializeInventory();

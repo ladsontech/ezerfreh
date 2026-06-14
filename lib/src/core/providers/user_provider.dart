@@ -12,7 +12,7 @@ final allUsersProvider = StreamProvider<List<AppUser>>((ref) {
         id: doc.id,
         name: data['name'] ?? 'Guest',
         email: data['email'] ?? 'No email',
-        role: data['role'] ?? 'customer',
+        role: (data['role'] as String?)?.trim().toLowerCase() ?? 'customer',
         createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       );
     }).toList();

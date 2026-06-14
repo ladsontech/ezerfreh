@@ -218,8 +218,12 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                                     : 'Publish Product',
                               ),
                               style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF2E7D32),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 18,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                             ),
@@ -284,6 +288,28 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     );
   }
 
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.black54),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.green.shade100),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.green.shade100),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2E7D32)),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
   Widget _buildForm() {
     return Column(
       children: [
@@ -296,27 +322,19 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
               )
               .toList(),
           onChanged: (val) => setState(() => _selectedCategoryId = val),
-          decoration: const InputDecoration(
-            labelText: 'Category',
-            border: OutlineInputBorder(),
-          ),
+          decoration: _inputDecoration('Category'),
+          dropdownColor: Colors.white,
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _nameController,
-          decoration: const InputDecoration(
-            labelText: 'Product Name',
-            border: OutlineInputBorder(),
-          ),
+          decoration: _inputDecoration('Product Name'),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _descriptionController,
           maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Description',
-            border: OutlineInputBorder(),
-          ),
+          decoration: _inputDecoration('Description'),
         ),
         const SizedBox(height: 16),
         Row(
@@ -325,20 +343,14 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
               child: TextField(
                 controller: _priceController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Price (UGX)',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: _inputDecoration('Price (UGX)'),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: TextField(
                 controller: _unitController,
-                decoration: const InputDecoration(
-                  labelText: 'Unit (e.g. / Kg)',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: _inputDecoration('Unit (e.g. / Kg)'),
               ),
             ),
           ],

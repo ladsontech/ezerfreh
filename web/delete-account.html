@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Request account and data deletion for Ezer Fresh.">
+  <title>Delete Account - Ezer Fresh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #D32F2F;
+      --primary-hover: #C62828;
+      --primary-light: #FFEBEE;
+      --success: #2E7D32;
+      --text-dark: #2C3E50;
+      --text-muted: #7F8C8D;
+      --bg: #F8FAF8;
+      --card-bg: #FFFFFF;
+      --border: #E8ECE8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-dark);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 4px 20px rgba(211, 47, 47, 0.03), 0 1px 8px rgba(0, 0, 0, 0.02);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid var(--bg);
+      padding-bottom: 25px;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #2E7D32;
+      text-decoration: none;
+      letter-spacing: -0.5px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .logo span {
+      color: #FDAA5E;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-dark);
+    }
+
+    .info-box {
+      background-color: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      font-size: 14px;
+      color: #C62828;
+      font-weight: 500;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    p {
+      font-size: 14px;
+      color: #34495E;
+      margin-bottom: 16px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    input, textarea {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 12px 16px;
+      border: 1px solid #BDC3C7;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #2E7D32;
+    }
+
+    .btn {
+      font-family: inherit;
+      display: block;
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
+      background-color: var(--primary);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .links {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 13px;
+    }
+
+    .links a {
+      color: #2E7D32;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    .success-message {
+      display: none;
+      text-align: center;
+      padding: 40px 10px;
+    }
+
+    .success-message h2 {
+      color: var(--success);
+      font-size: 22px;
+      margin-bottom: 10px;
+      text-transform: none;
+    }
+
+    .success-icon {
+      width: 60px;
+      height: 60px;
+      background: #E8F5E9;
+      color: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      margin: 0 auto 20px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 20px 10px;
+      }
+      .container {
+        padding: 24px 16px;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">Ezer<span>Fresh</span></div>
+      <h1 id="title-text">Account Deletion Request</h1>
+    </header>
+
+    <div id="form-container">
+      <div class="info-box">
+        <strong>Warning:</strong> Deleting your account is permanent. All your order history, delivery addresses, coordinates, and contact details will be completely wiped from our servers.
+      </div>
+
+      <section>
+        <h2>How it works</h2>
+        <p>Fill out the form below with your account details. Once submitted, our support team will verify and delete your profile and account data within <strong>24 hours</strong>. You will receive a confirmation email or SMS once complete.</p>
+      </section>
+
+      <form id="delete-form" onsubmit="handleSubmit(event)">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" required placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address or Phone Number</label>
+          <input type="text" id="email" required placeholder="Enter your registered email or phone">
+        </div>
+
+        <div class="form-group">
+          <label for="reason">Reason for Deletion (Optional)</label>
+          <textarea id="reason" rows="3" placeholder="Tell us why you want to delete your account"></textarea>
+        </div>
+
+        <button type="submit" class="btn">Delete My Account & Data</button>
+      </form>
+    </div>
+
+    <div id="success-container" class="success-message">
+      <div class="success-icon">&checkmark;</div>
+      <h2>Request Submitted</h2>
+      <p>Thank you. Your account deletion request has been registered. Our system will process the permanent deletion of your profile and data within 24 hours.</p>
+      <p>You will be logged out of all active app sessions shortly.</p>
+    </div>
+
+    <div class="links">
+      <a href="privacy.html">&larr; Back to Privacy Policy</a>
+    </div>
+  </div>
+
+  <script>
+    function handleSubmit(event) {
+      event.preventDefault();
+      
+      // In a production app, we would send this data to a Firebase Cloud Function 
+      // or other backend endpoint. Since this is client-side, we simulate a successful post.
+      const name = document.getElementById('name').value;
+      const contact = document.getElementById('email').value;
+      const reason = document.getElementById('reason').value;
+
+      console.log('Deletion requested:', { name, contact, reason });
+
+      // Animate transition to success
+      document.getElementById('form-container').style.display = 'none';
+      document.getElementById('title-text').innerText = 'Request Received';
+      document.getElementById('success-container').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

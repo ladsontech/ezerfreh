@@ -77,7 +77,7 @@ class AdminScreen extends ConsumerWidget {
               'Initialize Inventory',
               'One-time bulk upload of full inventory',
               Icons.system_update_alt,
-              Colors.purple,
+              const Color(0xFF2E7D32),
               () async {
                 showDialog(
                   context: context,

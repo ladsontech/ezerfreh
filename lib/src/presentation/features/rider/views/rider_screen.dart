@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
-import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

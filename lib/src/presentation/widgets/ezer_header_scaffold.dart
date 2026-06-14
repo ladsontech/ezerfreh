@@ -27,7 +27,7 @@ class EzerHeaderScaffold extends ConsumerWidget {
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAF8),
-            border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.03))),
+            border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.03))),
           ),
           child: SafeArea(
             bottom: false,
@@ -91,7 +91,7 @@ class EzerHeaderScaffold extends ConsumerWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

@@ -64,7 +64,7 @@ class _AdminProductsListScreenState
                                 maxCrossAxisExtent: 240,
                                 crossAxisSpacing: 14,
                                 mainAxisSpacing: 14,
-                                childAspectRatio: 0.68,
+                                childAspectRatio: 0.58,
                               ),
                           itemCount: filtered.length,
                           itemBuilder: (context, index) =>
@@ -98,29 +98,64 @@ class _AdminProductsListScreenState
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 760;
-          final search = TextField(
-            onChanged: (value) => setState(() => _query = value),
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              hintText: 'Search products',
-              border: OutlineInputBorder(),
+          final search = Container(
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: TextField(
+              onChanged: (value) => setState(() => _query = value),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                hintText: 'Search products',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 16),
+              ),
             ),
           );
-          final category = DropdownButtonFormField<String>(
-            initialValue: _category,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              border: OutlineInputBorder(),
+          final category = Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            items: _categories.entries
-                .map(
-                  (entry) => DropdownMenuItem(
-                    value: entry.key,
-                    child: Text(entry.value),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) => setState(() => _category = value ?? 'All'),
+            child: DropdownButtonHideUnderline(
+                child: DropdownButtonFormField<String>(
+                initialValue: _category,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: const TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600),
+                dropdownColor: Colors.white,
+                items: _categories.entries
+                    .map(
+                      (entry) => DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => setState(() => _category = value ?? 'All'),
+              ),
+            ),
           );
 
           final count = Text(
@@ -131,6 +166,12 @@ class _AdminProductsListScreenState
             onPressed: () => context.push('/admin/upload'),
             icon: const Icon(Icons.add),
             label: const Text('Add Product'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           );
 
           if (compact) {

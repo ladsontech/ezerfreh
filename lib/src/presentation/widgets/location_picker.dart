@@ -5,9 +5,18 @@ import 'package:ezer_fresh/src/core/services/location_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class LocationPicker extends StatefulWidget {
-  final Function(LatLng, String) onLocationSelected;
+  final Function(LatLng, String, String) onLocationSelected;
+  final String? initialAddress;
+  final LatLng? initialLatLng;
+  final String? initialApartmentSuite;
 
-  const LocationPicker({super.key, required this.onLocationSelected});
+  const LocationPicker({
+    super.key,
+    required this.onLocationSelected,
+    this.initialAddress,
+    this.initialLatLng,
+    this.initialApartmentSuite,
+  });
 
   @override
   State<LocationPicker> createState() => _LocationPickerState();
@@ -18,11 +27,26 @@ class _LocationPickerState extends State<LocationPicker> {
   String _address = "Select location on map";
   GoogleMapController? _mapController;
   final LocationService _locationService = LocationService();
+  final TextEditingController _apartmentSuiteController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _getCurrentUserLocation();
+    if (widget.initialApartmentSuite != null) {
+      _apartmentSuiteController.text = widget.initialApartmentSuite!;
+    }
+    if (widget.initialLatLng != null) {
+      _selectedLocation = widget.initialLatLng;
+      _address = widget.initialAddress ?? "Selected Location";
+    } else {
+      _getCurrentUserLocation();
+    }
+  }
+
+  @override
+  void dispose() {
+    _apartmentSuiteController.dispose();
+    super.dispose();
   }
 
   Future<void> _getCurrentUserLocation() async {
@@ -75,11 +99,18 @@ class _LocationPickerState extends State<LocationPicker> {
           child: Stack(
             children: [
               GoogleMap(
-                initialCameraPosition: const CameraPosition(
-                  target: LatLng(0, 0),
-                  zoom: 2,
+                initialCameraPosition: CameraPosition(
+                  target: _selectedLocation ?? const LatLng(0.3476, 32.5825),
+                  zoom: _selectedLocation != null ? 15 : 2,
                 ),
-                onMapCreated: (controller) => _mapController = controller,
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                  if (_selectedLocation != null) {
+                    _mapController?.animateCamera(
+                      CameraUpdate.newLatLngZoom(_selectedLocation!, 15),
+                    );
+                  }
+                },
                 onTap: (location) {
                   setState(() {
                     _selectedLocation = location;
@@ -108,7 +139,7 @@ class _LocationPickerState extends State<LocationPicker> {
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -135,10 +166,33 @@ class _LocationPickerState extends State<LocationPicker> {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _apartmentSuiteController,
+                        style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w600),
+                        decoration: InputDecoration(
+                          labelText: 'Apartment, Suite, Plot, or Floor (Optional)',
+                          labelStyle: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
+                          hintText: 'e.g. Apt 3B, Plot 14, or Blue gate near shop',
+                          hintStyle: GoogleFonts.lato(fontSize: 12, color: Colors.grey[400]),
+                          prefixIcon: const Icon(Icons.apartment_outlined, size: 20),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAF8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _selectedLocation != null
-                            ? () => widget.onLocationSelected(_selectedLocation!, _address)
+                            ? () => widget.onLocationSelected(
+                                  _selectedLocation!,
+                                  _address,
+                                  _apartmentSuiteController.text,
+                                )
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2E7D32),

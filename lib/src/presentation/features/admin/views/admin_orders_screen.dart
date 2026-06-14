@@ -124,6 +124,13 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
               ButtonSegment(value: 'Completed', label: Text('Done')),
             ],
             selected: {_statusFilter},
+            style: SegmentedButton.styleFrom(
+              selectedBackgroundColor: const Color(0xFF2E7D32),
+              selectedForegroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onSelectionChanged: (selected) =>
                 setState(() => _statusFilter = selected.first),
           ),
@@ -358,8 +365,22 @@ class _StatusMenu extends StatelessWidget {
           horizontal: 12,
           vertical: 10,
         ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.green.shade100),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.green.shade100),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF2E7D32)),
+        ),
       ),
+      dropdownColor: Colors.white,
       items: statuses
           .map((status) => DropdownMenuItem(value: status, child: Text(status)))
           .toList(),

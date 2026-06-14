@@ -40,6 +40,7 @@ class OrderModel {
   final DateTime createdAt;
   final String status;
   final String? address;
+  final String? apartmentSuite;
   final double? latitude;
   final double? longitude;
 
@@ -51,6 +52,7 @@ class OrderModel {
     required this.createdAt,
     required this.status,
     this.address,
+    this.apartmentSuite,
     this.latitude,
     this.longitude,
   });
@@ -68,6 +70,7 @@ class OrderModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       status: data['status'] ?? 'Pending',
       address: data['address'],
+      apartmentSuite: data['apartmentSuite'],
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
     );

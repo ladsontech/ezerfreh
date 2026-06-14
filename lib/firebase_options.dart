@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCD2DchR_hXFflK9lf4OkW5Y0gmr7XUW98',
-    appId: '1:562553165879:android:e29dd9ca5f13ceeccdc7b2',
+    appId: '1:562553165879:android:0ea5189fe28e5024cdc7b2',
     messagingSenderId: '562553165879',
     projectId: 'ezerfresh-f87af',
     storageBucket: 'ezerfresh-f87af.firebasestorage.app',

@@ -69,7 +69,11 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
             _buildFeaturedProductsGrid(context, ref, '2'),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: ref.watch(cartProvider).isNotEmpty ? 180.0 : 32.0,
+              ),
+            ),
           ],
         ],
       ),
@@ -172,16 +176,22 @@ class HomeScreen extends ConsumerWidget {
                                 final authAsync = ref.watch(authStateProvider);
                                 return authAsync.when(
                                   data: (user) {
-                                    if (user == null)
+                                    if (user == null) {
                                       return const Text('Select Location');
+                                    }
                                     final profileAsync = ref
                                         .watch(userProfileProvider(user.uid));
                                     return profileAsync.when(
                                       data: (doc) {
                                         final data =
                                             doc.data() as Map<String, dynamic>?;
+                                        final address = data?['address'] as String?;
+                                        final suite = data?['apartmentSuite'] as String?;
+                                        final displayAddress = (address != null && suite != null && suite.isNotEmpty)
+                                            ? '$address ($suite)'
+                                            : (address ?? 'Select Location');
                                         return Text(
-                                          data?['address'] ?? 'Select Location',
+                                          displayAddress,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: GoogleFonts.lato(
@@ -225,7 +235,7 @@ class HomeScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -252,7 +262,7 @@ class HomeScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -373,8 +383,9 @@ class HomeScreen extends ConsumerWidget {
 
     return productsAsyncValue.when(
       data: (products) {
-        if (products.isEmpty)
+        if (products.isEmpty) {
           return const SliverToBoxAdapter(child: SizedBox());
+        }
         return SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid(

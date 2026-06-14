@@ -69,9 +69,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Authentication failed')),
-        );
+        if (e.code == 'email-already-in-use') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('This email is already in use by another account.'),
+              action: SnackBarAction(
+                label: 'Switch to Login',
+                onPressed: () {
+                  setState(() {
+                    _isLogin = true;
+                    _passwordController.clear();
+                  });
+                },
+              ),
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message ?? 'Authentication failed')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -101,7 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             right: -100,
             child: CircleAvatar(
               radius: 150,
-              backgroundColor: colorScheme.primary.withOpacity(0.05),
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.05),
             ),
           ),
           Positioned(
@@ -109,7 +127,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             left: -50,
             child: CircleAvatar(
               radius: 100,
-              backgroundColor: colorScheme.primary.withOpacity(0.05),
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.05),
             ),
           ),
           SafeArea(
@@ -133,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       _isLogin ? 'Welcome back!' : 'Create your account',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -221,7 +239,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ? "Don't have an account? "
                               : "Already have an account? ",
                           style: TextStyle(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         TextButton(
@@ -263,9 +281,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: colorScheme.primary.withOpacity(0.7)),
+        prefixIcon: Icon(icon, color: colorScheme.primary.withValues(alpha: 0.7)),
         filled: true,
-        fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -278,7 +296,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
-        labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+        labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
       ),
     );
   }

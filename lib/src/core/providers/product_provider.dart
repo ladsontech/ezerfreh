@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final productsProvider = StreamProvider.family<List<Product>, String>((
@@ -8,7 +9,7 @@ final productsProvider = StreamProvider.family<List<Product>, String>((
 ) {
   final firestore = FirebaseFirestore.instance;
 
-  print('Fetching products for category: $categoryId');
+  debugPrint('Fetching products for category: $categoryId');
   return firestore
       .collection('products')
       .where('categoryId', isEqualTo: categoryId)

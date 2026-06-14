@@ -14,7 +14,8 @@ import 'package:ezer_fresh/src/presentation/widgets/ezer_header_scaffold.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_dashboard_view.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_orders_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_products_list_screen.dart';
-import 'package:ezer_fresh/src/presentation/features/rider/views/rider_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/rider/views/rider_dashboard_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/rider/views/rider_history_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/upload_product_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/onboarding/views/onboarding_screen.dart';
 import 'package:flutter/material.dart';
@@ -72,8 +73,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (role == 'admin' &&
             !loc.startsWith('/admin') &&
             !loc.startsWith('/product-detail') &&
-            !loc.startsWith('/products')) return '/admin';
-        if (role == 'rider' && !loc.startsWith('/rider')) return '/rider';
+            !loc.startsWith('/products')) {
+          return '/admin';
+        }
+        if (role == 'rider' && !loc.startsWith('/rider')) {
+          return '/rider';
+        }
         if (role == 'customer' && (loc.startsWith('/admin') || loc.startsWith('/rider'))) {
           return '/home';
         }
@@ -179,7 +184,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const EzerHeaderScaffold(
                   title: 'Deliveries',
                   subtitle: 'Active routes and pending orders',
-                  body: RiderScreen(),
+                  body: RiderDashboardScreen(),
                 ),
               ),
             ],
@@ -191,7 +196,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const EzerHeaderScaffold(
                   title: 'Trip History',
                   subtitle: 'Review your past deliveries',
-                  body: Center(child: Text('Trip history coming soon.')),
+                  body: RiderHistoryScreen(),
                 ),
               ),
             ],

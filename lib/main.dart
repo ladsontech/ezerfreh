@@ -8,10 +8,19 @@ import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
-  // Initialize Push Notifications
-  await NotificationService().initialize();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase init error: $e');
+  }
+  
+  // Initialize Push Notifications (non-fatal if it fails)
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('Notification init error: $e');
+  }
   
   runApp(const ProviderScope(child: MyApp()));
 }

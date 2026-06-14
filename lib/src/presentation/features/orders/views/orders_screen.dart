@@ -42,7 +42,12 @@ class OrdersScreen extends ConsumerWidget {
             return _EmptyCustomerOrders(onShop: () => context.go('/home'));
           }
           return ListView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              ref.watch(cartProvider).isNotEmpty ? 180.0 : 24.0,
+            ),
             children: [
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -184,7 +189,7 @@ class _CustomerOrderCard extends StatelessWidget {
                 width: 48,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Image.asset(

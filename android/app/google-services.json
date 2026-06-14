@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:562553165879:android:e29dd9ca5f13ceeccdc7b2",
+        "mobilesdk_app_id": "1:562553165879:android:0ea5189fe28e5024cdc7b2",
         "android_client_info": {
-          "package_name": "com.example.myapp"
+          "package_name": "com.ezerfresh.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "562553165879-437mcgqcp3tadn1s40viknqm20mg5tvj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCD2DchR_hXFflK9lf4OkW5Y0gmr7XUW98"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "562553165879-437mcgqcp3tadn1s40viknqm20mg5tvj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "562553165879-mf805r0nalodhhcqbk19hl5ifi09cnq8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ezerfresh.app"
+              }
+            }
+          ]
         }
       }
     }

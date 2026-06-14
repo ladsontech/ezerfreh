@@ -5,7 +5,6 @@ import 'package:ezer_fresh/src/core/services/auth_service.dart';
 import 'package:ezer_fresh/src/data/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/riverpod.dart';
 
 export 'cart_provider.dart';
 
@@ -55,7 +54,8 @@ final userRoleProvider = StreamProvider<String>((ref) {
             controller.add('customer');
           } else {
             final data = doc.data() as Map<String, dynamic>?;
-            controller.add(data?['role'] as String? ?? 'customer');
+            final role = (data?['role'] as String?)?.trim().toLowerCase() ?? 'customer';
+            controller.add(role);
           }
         },
         onError: (_) => controller.add('customer'),

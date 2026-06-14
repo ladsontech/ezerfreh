@@ -23,7 +23,7 @@ class ProfileScreen extends ConsumerWidget {
               Icon(
                 Icons.lock_person_outlined,
                 size: 80,
-                color: colorScheme.primary.withOpacity(0.3),
+                color: colorScheme.primary.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
@@ -62,7 +62,7 @@ class ProfileScreen extends ConsumerWidget {
                   Icon(
                     Icons.person_add_outlined,
                     size: 80,
-                    color: colorScheme.primary.withOpacity(0.3),
+                    color: colorScheme.primary.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 16),
                   const Text('You haven\'t created a profile yet.'),
@@ -113,14 +113,14 @@ class ProfileScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+                colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: colorScheme.primary.withOpacity(0.3),
+                  color: colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -154,7 +154,7 @@ class ProfileScreen extends ConsumerWidget {
                   data['email'] ?? authEmail ?? 'No email',
                   style: GoogleFonts.lato(
                     fontSize: 15,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -191,7 +191,7 @@ class ProfileScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -220,7 +220,9 @@ class ProfileScreen extends ConsumerWidget {
                 _buildListTile(
                   icon: Icons.location_on_outlined,
                   title: 'Delivery Address',
-                  subtitle: data['address'] ?? 'Not set',
+                  subtitle: data['apartmentSuite'] != null && data['apartmentSuite'].toString().isNotEmpty
+                      ? '${data['address']} (${data['apartmentSuite']})'
+                      : (data['address'] ?? 'Not set'),
                 ),
               ],
             ),
@@ -338,7 +340,7 @@ class ProfileScreen extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
+          color: Colors.green.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: Colors.green),

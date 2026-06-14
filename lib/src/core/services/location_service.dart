@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
@@ -46,7 +47,7 @@ class LocationService {
         return "${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}";
       }
     } catch (e) {
-      print(e);
+      debugPrint('$e');
     }
     return "Unknown Address";
   }

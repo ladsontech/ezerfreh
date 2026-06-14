@@ -9,7 +9,7 @@ class BottomNavigation extends StatefulWidget {
   const BottomNavigation({super.key, required this.userType});
 
   @override
-  _BottomNavigationState createState() => _BottomNavigationState();
+  State<BottomNavigation> createState() => _BottomNavigationState();
 }
 
 class _BottomNavigationState extends State<BottomNavigation> {
