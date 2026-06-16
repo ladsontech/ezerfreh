@@ -17,155 +17,124 @@ class RiderHistoryScreen extends ConsumerWidget {
     return historyAsync.when(
       data: (orders) {
         final completed = orders
-            .where((o) => o.orderStatus == OrderStatus.completed)
-            .toList();
+            .where((order) => order.orderStatus == OrderStatus.completed)
+            .length;
         final cancelled = orders
-            .where((o) => o.orderStatus == OrderStatus.cancelled)
-            .toList();
-        final totalEarned = completed.fold<double>(
-          0,
-          (total, order) => total + order.totalAmount,
-        );
+            .where((order) => order.orderStatus == OrderStatus.cancelled)
+            .length;
+        final orderValue = orders
+            .where((order) => order.orderStatus == OrderStatus.completed)
+            .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          children: [
-            // ── Summary Cards ──
-            _HistorySummary(
-              totalTrips: completed.length,
-              totalEarned: totalEarned,
-              cancelledTrips: cancelled.length,
-            ),
-            const SizedBox(height: 24),
-
-            // ── History List ──
-            Row(
-              children: [
-                Text(
-                  'Past Deliveries',
-                  style: GoogleFonts.lato(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${orders.length} total',
-                  style: GoogleFonts.lato(
-                    fontSize: 13,
-                    color: Colors.grey[500],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            if (orders.isEmpty)
-              _EmptyHistory()
-            else
-              ...orders.map(
-                (order) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _HistoryCard(order: order),
-                ),
+        return RefreshIndicator(
+          onRefresh: () async => ref.invalidate(riderHistoryProvider),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+            children: [
+              _HistoryHeader(
+                completed: completed,
+                cancelled: cancelled,
+                orderValue: orderValue,
               ),
-          ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Past Deliveries',
+                      style: GoogleFonts.lato(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  Text('${orders.length} total'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (orders.isEmpty)
+                const _EmptyHistory()
+              else
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 900;
+                    if (!wide) {
+                      return Column(
+                        children: orders
+                            .map((order) => _HistoryTile(order: order))
+                            .toList(),
+                      );
+                    }
+
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: orders
+                          .map(
+                            (order) => SizedBox(
+                              width: (constraints.maxWidth - 12) / 2,
+                              child: _HistoryTile(order: order),
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
+                ),
+            ],
+          ),
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF00B894)),
-      ),
-      error: (e, s) => Center(child: Text('Error: $e')),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text('Error: $error')),
     );
   }
 }
 
-// ─── Summary ────────────────────────────────────────────────────────────────
+class _HistoryHeader extends StatelessWidget {
+  final int completed;
+  final int cancelled;
+  final double orderValue;
 
-class _HistorySummary extends StatelessWidget {
-  final int totalTrips;
-  final double totalEarned;
-  final int cancelledTrips;
-
-  const _HistorySummary({
-    required this.totalTrips,
-    required this.totalEarned,
-    required this.cancelledTrips,
+  const _HistoryHeader({
+    required this.completed,
+    required this.cancelled,
+    required this.orderValue,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2D3436), Color(0xFF636E72)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2D3436).withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.history, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Text(
-                'Delivery Summary',
-                style: GoogleFonts.lato(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
+              const Icon(Icons.history, color: Color(0xFF00B894)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Delivery History',
+                  style: GoogleFonts.lato(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
+              const LiveIndicator(),
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
             children: [
-              Expanded(
-                child: _SummaryItem(
-                  label: 'Completed',
-                  value: '$totalTrips',
-                  icon: Icons.check_circle_outline,
-                  color: const Color(0xFF00B894),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _SummaryItem(
-                  label: 'Order Value',
-                  value: 'UGX ${NumberFormat.compact().format(totalEarned)}',
-                  icon: Icons.payments_outlined,
-                  color: const Color(0xFFFDAA5E),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _SummaryItem(
-                  label: 'Cancelled',
-                  value: '$cancelledTrips',
-                  icon: Icons.cancel_outlined,
-                  color: const Color(0xFFFF6B6B),
-                ),
+              _SummaryPill(label: 'Completed', value: '$completed'),
+              _SummaryPill(label: 'Cancelled', value: '$cancelled'),
+              _SummaryPill(
+                label: 'Order Value',
+                value: 'UGX ${NumberFormat.compact().format(orderValue)}',
               ),
             ],
           ),
@@ -175,113 +144,57 @@ class _HistorySummary extends StatelessWidget {
   }
 }
 
-class _SummaryItem extends StatelessWidget {
+class _SummaryPill extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
-  final Color color;
 
-  const _SummaryItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+  const _SummaryPill({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFFF8FAF8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE8ECE8)),
       ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lato(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: GoogleFonts.lato(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+      child: Text(
+        '$label: $value',
+        style: GoogleFonts.lato(fontWeight: FontWeight.w800),
       ),
     );
   }
 }
 
-// ─── History Card ───────────────────────────────────────────────────────────
-
-class _HistoryCard extends StatelessWidget {
+class _HistoryTile extends StatelessWidget {
   final OrderModel order;
 
-  const _HistoryCard({required this.order});
+  const _HistoryTile({required this.order});
 
   @override
   Widget build(BuildContext context) {
     final status = order.orderStatus;
-    final statusColor = status.color;
-    final totalItems = order.items.fold<int>(0, (total, item) => total + item.quantity);
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: _cardDecoration(borderColor: status.color.withValues(alpha: 0.22)),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(status.icon, color: statusColor, size: 22),
-          ),
-          const SizedBox(width: 14),
+          Icon(status.icon, color: status.color),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Order #${order.id.substring(0, order.id.length < 8 ? order.id.length : 8).toUpperCase()}',
-                  style: GoogleFonts.lato(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
+                  'Order ${order.shortId}',
+                  style: GoogleFonts.lato(fontWeight: FontWeight.w900),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  '$totalItems items • ${DateFormat.yMMMd().format(order.createdAt)}',
-                  style: GoogleFonts.lato(
-                    color: Colors.grey[500],
-                    fontSize: 12,
-                  ),
+                  '${order.totalItems} items, ${DateFormat.yMMMd().format(order.createdAt)}',
+                  style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -290,14 +203,10 @@ class _HistoryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'UGX ${NumberFormat('#,###').format(order.totalAmount)}',
-                style: GoogleFonts.lato(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                  color: Colors.black87,
-                ),
+                'UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+                style: GoogleFonts.lato(fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               OrderStatusBadge(status: status, compact: true),
             ],
           ),
@@ -307,49 +216,44 @@ class _HistoryCard extends StatelessWidget {
   }
 }
 
-// ─── Empty State ────────────────────────────────────────────────────────────
-
 class _EmptyHistory extends StatelessWidget {
+  const _EmptyHistory();
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
+      padding: const EdgeInsets.all(32),
+      decoration: _cardDecoration(),
       child: Column(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.history, size: 36, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 16),
+          Icon(Icons.history, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 10),
           Text(
-            'No History Yet',
-            style: GoogleFonts.lato(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-            ),
+            'No delivery history yet',
+            style: GoogleFonts.lato(fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            'Completed deliveries will appear here.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.lato(
-              fontSize: 13,
-              color: Colors.grey[500],
-            ),
+            'Completed and cancelled deliveries will appear here.',
+            style: GoogleFonts.lato(color: Colors.grey[600]),
           ),
         ],
       ),
     );
   }
+}
+
+BoxDecoration _cardDecoration({Color? borderColor}) {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: borderColor ?? const Color(0xFFE8ECE8)),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.03),
+        blurRadius: 10,
+        offset: const Offset(0, 3),
+      ),
+    ],
+  );
 }

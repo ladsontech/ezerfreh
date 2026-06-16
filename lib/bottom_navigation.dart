@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:ezer_fresh/src/presentation/features/admin/views/admin_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/admin/views/admin_dashboard_view.dart';
+import 'package:ezer_fresh/src/presentation/features/admin/views/admin_orders_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/admin/views/admin_products_list_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/cart/views/cart_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/home/views/home_screen.dart';
-import 'package:ezer_fresh/src/presentation/features/rider/views/rider_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/orders/views/orders_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/profile/views/profile_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/rider/views/rider_dashboard_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/rider/views/rider_history_screen.dart';
 
 class BottomNavigation extends StatefulWidget {
   final String userType;
@@ -19,21 +25,22 @@ class _BottomNavigationState extends State<BottomNavigation> {
     switch (widget.userType) {
       case 'admin':
         return [
-          const AdminScreen(),
-          const Center(child: Text('Placeholder Screen 1')),
-          const Center(child: Text('Placeholder Screen 2')),
+          const AdminOverviewTab(),
+          const AdminOrdersScreen(isTab: true),
+          const AdminProductsListScreen(isTab: true),
         ];
       case 'rider':
         return [
-          const RiderScreen(),
-          const Center(child: Text('Placeholder Screen 1')),
-          const Center(child: Text('Placeholder Screen 2')),
+          const RiderDashboardScreen(),
+          const RiderHistoryScreen(),
+          const ProfileScreen(),
         ];
       default:
         return [
           const HomeScreen(),
-          const Center(child: Text('Placeholder Screen 1')),
-          const Center(child: Text('Placeholder Screen 2')),
+          const CartScreen(),
+          const OrdersScreen(),
+          const ProfileScreen(),
         ];
     }
   }
@@ -51,8 +58,8 @@ class _BottomNavigationState extends State<BottomNavigation> {
             label: 'Orders',
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
+            icon: Icon(Icons.inventory_2),
+            label: 'Products',
           ),
         ];
       case 'rider':
@@ -76,6 +83,10 @@ class _BottomNavigationState extends State<BottomNavigation> {
           const BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart),
             label: 'Cart',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: 'Orders',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.person),

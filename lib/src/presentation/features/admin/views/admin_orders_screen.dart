@@ -17,7 +17,7 @@ class AdminOrdersScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
-  String _statusFilter = 'All';
+  String _filter = 'All';
 
   static const _filters = [
     'All',
@@ -34,56 +34,11 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ordersAsyncValue = ref.watch(adminOrdersProvider);
-
-    Widget content = ordersAsyncValue.when(
-      data: (orders) {
-        final filtered = _statusFilter == 'All'
-            ? orders
-            : orders
-                .where(
-                  (order) =>
-                      order.orderStatus.label.toLowerCase() ==
-                      _statusFilter.toLowerCase(),
-                )
-                .toList();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _AdminToolbar(orders: orders),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-              child: OrderStatusChipBar(
-                selected: _statusFilter,
-                options: _filters,
-                onSelected: (value) => setState(() => _statusFilter = value),
-              ),
-            ),
-            Expanded(
-              child: filtered.isEmpty
-                  ? _EmptyOrdersState(status: _statusFilter)
-                  : LayoutBuilder(
-                      builder: (context, constraints) {
-                        return ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) => _AdminOrderCard(
-                            order: filtered[index],
-                            onStatusChanged: (status) =>
-                                _updateStatus(context, filtered[index], status),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
+    final ordersAsync = ref.watch(adminOrdersProvider);
+    final content = ordersAsync.when(
+      data: _buildOrders,
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(child: Text('Error: $error')),
+      error: (error, _) => Center(child: Text('Error: $error')),
     );
 
     if (widget.isTab) return content;
@@ -94,96 +49,126 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
     );
   }
 
-  Future<void> _updateStatus(
-    BuildContext context,
-    OrderModel order,
-    OrderStatus status,
-  ) async {
-    if (status == order.orderStatus) return;
+  Widget _buildOrders(List<OrderModel> orders) {
+    final filtered = _filter == 'All'
+        ? orders
+        : orders
+            .where((order) => order.orderStatus.label == _filter)
+            .toList();
+
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(adminOrdersProvider),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+        children: [
+          _OrdersSummary(orders: orders),
+          const SizedBox(height: 14),
+          OrderStatusChipBar(
+            selected: _filter,
+            options: _filters,
+            onSelected: (value) => setState(() => _filter = value),
+          ),
+          const SizedBox(height: 14),
+          if (filtered.isEmpty)
+            _EmptyOrders(filter: _filter)
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 900;
+                if (!wide) {
+                  return Column(
+                    children: filtered
+                        .map((order) => _AdminOrderCard(
+                              order: order,
+                              onStatusChanged: _updateStatus,
+                            ))
+                        .toList(),
+                  );
+                }
+
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: filtered
+                      .map((order) => SizedBox(
+                            width: (constraints.maxWidth - 12) / 2,
+                            child: _AdminOrderCard(
+                              order: order,
+                              onStatusChanged: _updateStatus,
+                            ),
+                          ))
+                      .toList(),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateStatus(OrderModel order, OrderStatus status) async {
+    if (order.orderStatus == status) return;
 
     try {
       await ref.read(orderServiceProvider).updateStatus(order.id, status);
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Order ${order.shortId} → ${status.label}'),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text('Order ${order.shortId} updated to ${status.label}.')),
       );
-    } catch (e) {
-      if (!context.mounted) return;
+    } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $e')),
+        SnackBar(content: Text('Update failed: $error')),
       );
     }
   }
 }
 
-class _AdminToolbar extends StatelessWidget {
+class _OrdersSummary extends StatelessWidget {
   final List<OrderModel> orders;
 
-  const _AdminToolbar({required this.orders});
+  const _OrdersSummary({required this.orders});
 
   @override
   Widget build(BuildContext context) {
-    final active = orders.where((o) => o.orderStatus.isActive).length;
+    final active = orders.where((order) => order.orderStatus.isActive).length;
+    final inDelivery = orders.where((order) => order.orderStatus.isDeliveryPhase).length;
     final revenue = orders
-        .where((o) => o.orderStatus != OrderStatus.cancelled)
-        .fold<double>(0, (total, o) => total + o.totalAmount);
-    final inDelivery = orders
-        .where(
-          (o) =>
-              o.orderStatus.index >= OrderStatus.assigned.index &&
-              o.orderStatus.index <= OrderStatus.arrived.index,
-        )
-        .length;
+        .where((order) => order.orderStatus != OrderStatus.cancelled)
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(
-                'Order Management',
-                style: GoogleFonts.lato(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
+              Expanded(
+                child: Text(
+                  'Order Management',
+                  style: GoogleFonts.lato(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-              const Spacer(),
               const LiveIndicator(),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: 10,
+            runSpacing: 10,
             children: [
-              _MetricPill(
-                icon: Icons.receipt_long_outlined,
-                label: 'Total',
-                value: '${orders.length}',
-                color: const Color(0xFF0984E3),
-              ),
-              _MetricPill(
-                icon: Icons.local_shipping_outlined,
-                label: 'Active',
-                value: '$active',
-                color: const Color(0xFFFDAA5E),
-              ),
-              _MetricPill(
-                icon: Icons.delivery_dining,
-                label: 'In Delivery',
-                value: '$inDelivery',
-                color: const Color(0xFF00B894),
-              ),
-              _MetricPill(
-                icon: Icons.payments_outlined,
+              _SummaryPill(label: 'Total', value: '${orders.length}', icon: Icons.receipt_long_outlined),
+              _SummaryPill(label: 'Active', value: '$active', icon: Icons.bolt_outlined),
+              _SummaryPill(label: 'Delivery', value: '$inDelivery', icon: Icons.delivery_dining_outlined),
+              _SummaryPill(
                 label: 'Revenue',
                 value: 'UGX ${NumberFormat.compact().format(revenue)}',
-                color: const Color(0xFF2E7D32),
+                icon: Icons.payments_outlined,
               ),
             ],
           ),
@@ -193,9 +178,42 @@ class _AdminToolbar extends StatelessWidget {
   }
 }
 
+class _SummaryPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _SummaryPill({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAF8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE8ECE8)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF2E7D32)),
+          const SizedBox(width: 8),
+          Text('$label: ', style: GoogleFonts.lato(color: Colors.grey[600])),
+          Text(value, style: GoogleFonts.lato(fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
 class _AdminOrderCard extends StatefulWidget {
   final OrderModel order;
-  final ValueChanged<OrderStatus> onStatusChanged;
+  final void Function(OrderModel order, OrderStatus status) onStatusChanged;
 
   const _AdminOrderCard({
     required this.order,
@@ -214,136 +232,89 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
     final order = widget.order;
     final status = order.orderStatus;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      padding: const EdgeInsets.all(18),
-      decoration: OrderPanelDecoration.card(
-        borderColor: status.isActive
-            ? status.color.withValues(alpha: 0.2)
-            : const Color(0xFFE8ECE8),
-      ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(borderColor: status.color.withValues(alpha: 0.22)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             child: Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: status.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(status.icon, color: status.color),
-                ),
-                const SizedBox(width: 14),
+                Icon(status.icon, color: status.color),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Order ${order.shortId}',
-                        style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+                        style: GoogleFonts.lato(fontWeight: FontWeight.w900),
                       ),
                       Text(
                         DateFormat.yMMMd().add_jm().format(order.createdAt),
-                        style: GoogleFonts.lato(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
+                        style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                OrderStatusBadge(status: status),
-                const SizedBox(width: 8),
-                Icon(
-                  _expanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  color: Colors.grey[500],
-                ),
+                OrderStatusBadge(status: status, compact: true),
+                Icon(_expanded ? Icons.expand_less : Icons.expand_more),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           OrderDeliveryTimeline(status: status, compact: true),
+          const SizedBox(height: 12),
+          Text(
+            '${order.totalItems} items, UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+            style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+          ),
+          if (order.fullAddress != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined, size: 16),
+                const SizedBox(width: 6),
+                Expanded(child: Text(order.fullAddress!)),
+              ],
+            ),
+          ],
           if (_expanded) ...[
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 14),
+            const Divider(height: 24),
             ...order.items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Text('${item.quantity}x ${item.name}'),
-                    ),
-                    Text(
-                      'UGX ${NumberFormat('#,##0').format(item.price * item.quantity)}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                    Expanded(child: Text('${item.quantity}x ${item.name}')),
+                    Text('UGX ${NumberFormat('#,##0').format(item.price * item.quantity)}'),
                   ],
                 ),
               ),
             ),
-            if (order.fullAddress != null) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Icon(Icons.location_on_outlined,
-                      size: 16, color: Colors.grey[500]),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(order.fullAddress!)),
-                ],
-              ),
-            ],
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Text(
-                  'Total: UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
-                  style: GoogleFonts.lato(fontWeight: FontWeight.w900),
-                ),
-                const Spacer(),
-                if (order.updatedAt != null)
-                  Text(
-                    'Updated ${DateFormat.jm().format(order.updatedAt!)}',
-                    style: GoogleFonts.lato(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Update Status',
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-            ),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: OrderStatus.adminFlow.map((s) {
-                final isSelected = s == status;
-                return ChoiceChip(
-                  label: Text(s.label),
-                  selected: isSelected,
-                  avatar: Icon(s.icon, size: 16, color: s.color),
-                  selectedColor: s.color.withValues(alpha: 0.15),
-                  onSelected: isSelected
-                      ? null
-                      : (_) => widget.onStatusChanged(s),
-                );
-              }).toList(),
+            DropdownButtonFormField<OrderStatus>(
+              value: status,
+              decoration: const InputDecoration(
+                labelText: 'Update status',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: OrderStatus.adminFlow
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item,
+                      child: Text(item.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) widget.onStatusChanged(order, value);
+              },
             ),
           ],
         ],
@@ -352,72 +323,38 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
   }
 }
 
-class _MetricPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
+class _EmptyOrders extends StatelessWidget {
+  final String filter;
 
-  const _MetricPill({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _EmptyOrders({required this.filter});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: OrderPanelDecoration.card(borderColor: Colors.grey.shade100),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.all(32),
+      decoration: _cardDecoration(),
+      child: Column(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.lato(fontWeight: FontWeight.w900),
-              ),
-              Text(
-                label,
-                style: GoogleFonts.lato(color: Colors.grey[600], fontSize: 12),
-              ),
-            ],
-          ),
+          Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 10),
+          Text(filter == 'All' ? 'No orders yet' : 'No $filter orders'),
         ],
       ),
     );
   }
 }
 
-class _EmptyOrdersState extends StatelessWidget {
-  final String status;
-
-  const _EmptyOrdersState({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 12),
-          Text(status == 'All' ? 'No orders yet' : 'No $status orders'),
-        ],
+BoxDecoration _cardDecoration({Color? borderColor}) {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: borderColor ?? const Color(0xFFE8ECE8)),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.03),
+        blurRadius: 10,
+        offset: const Offset(0, 3),
       ),
-    );
-  }
+    ],
+  );
 }
