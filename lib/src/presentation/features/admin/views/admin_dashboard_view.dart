@@ -8,28 +8,24 @@ import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.d
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
+// ─── Overview Tab ────────────────────────────────────────────────────────────
 
 class AdminOverviewTab extends ConsumerWidget {
   const AdminOverviewTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final productsAsync = ref.watch(allProductsProvider);
-    final ordersAsync = ref.watch(adminOrdersProvider);
-    final usersAsync = ref.watch(allUsersProvider);
+    final products = ref.watch(allProductsProvider).asData?.value ?? [];
+    final orders   = ref.watch(adminOrdersProvider).asData?.value ?? [];
+    final users    = ref.watch(allUsersProvider).asData?.value ?? [];
 
-    final products = productsAsync.asData?.value ?? [];
-    final orders = ordersAsync.asData?.value ?? [];
-    final users = usersAsync.asData?.value ?? [];
-    final activeOrders = orders.where((order) => order.orderStatus.isActive).length;
-    final completedOrders = orders
-        .where((order) => order.orderStatus == OrderStatus.completed)
-        .length;
+    final activeOrders    = orders.where((o) => o.orderStatus.isActive).length;
+    final completedOrders = orders.where((o) => o.orderStatus == OrderStatus.completed).length;
     final revenue = orders
-        .where((order) => order.orderStatus != OrderStatus.cancelled)
-        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+        .where((o) => o.orderStatus != OrderStatus.cancelled)
+        .fold<double>(0, (sum, o) => sum + o.totalAmount);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -38,166 +34,108 @@ class AdminOverviewTab extends ConsumerWidget {
         ref.invalidate(allUsersProvider);
       },
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
         children: [
-          _LiveHeader(
-            title: 'Admin Control',
-            subtitle: 'Live shop totals, orders, inventory, and users.',
-            actionLabel: 'Add Product',
-            onAction: () => context.push('/admin/upload'),
+          // ── Stat row ──────────────────────────────────────
+          Row(
+            children: [
+              _Stat(label: 'Revenue',  value: 'UGX ${NumberFormat.compact().format(revenue)}', icon: Icons.payments_outlined,       color: const Color(0xFF2E7D32)),
+              _Stat(label: 'Products', value: '${products.length}',                             icon: Icons.inventory_2_outlined,     color: const Color(0xFF0984E3)),
+              _Stat(label: 'Active',   value: '$activeOrders',                                  icon: Icons.local_shipping_outlined,  color: const Color(0xFFFDAA5E)),
+              _Stat(label: 'Users',    value: '${users.length}',                                icon: Icons.people_outline,           color: const Color(0xFF6C5CE7)),
+            ],
           ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 900
-                  ? 4
-                  : constraints.maxWidth >= 560
-                      ? 2
-                      : 1;
+          const SizedBox(height: 10),
 
-              return GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: columns,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: columns == 1 ? 3.6 : 2.0,
-                children: [
-                  _MetricCard(
-                    label: 'Revenue',
-                    value: 'UGX ${NumberFormat.compact().format(revenue)}',
-                    icon: Icons.payments_outlined,
-                    color: const Color(0xFF2E7D32),
-                  ),
-                  _MetricCard(
-                    label: 'Products',
-                    value: '${products.length}',
-                    icon: Icons.inventory_2_outlined,
-                    color: const Color(0xFF0984E3),
-                  ),
-                  _MetricCard(
-                    label: 'Active Orders',
-                    value: '$activeOrders',
-                    icon: Icons.local_shipping_outlined,
-                    color: const Color(0xFFFDAA5E),
-                  ),
-                  _MetricCard(
-                    label: 'Users',
-                    value: '${users.length}',
-                    icon: Icons.people_outline,
-                    color: const Color(0xFF6C5CE7),
-                  ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          _SectionPanel(
+          // ── Quick actions ─────────────────────────────────
+          _Section(
             title: 'Quick Actions',
-            trailing: const LiveIndicator(),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 720;
-                return Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _ActionButton(
-                      wide: wide,
-                      label: 'Sync Inventory',
-                      subtitle: 'Upload or refresh products',
-                      icon: Icons.sync,
-                      color: const Color(0xFF2E7D32),
-                      onTap: () => _runSync(context, ref, _SyncMode.all),
-                    ),
-                    _ActionButton(
-                      wide: wide,
-                      label: 'Repair Categories',
-                      subtitle: 'Fix herbs and spices',
-                      icon: Icons.eco_outlined,
-                      color: const Color(0xFF00B894),
-                      onTap: () => _runSync(context, ref, _SyncMode.special),
-                    ),
-                    _ActionButton(
-                      wide: wide,
-                      label: 'Clean Duplicates',
-                      subtitle: 'Remove repeated records',
-                      icon: Icons.cleaning_services_outlined,
-                      color: const Color(0xFFFF6B6B),
-                      onTap: () => _runSync(context, ref, _SyncMode.cleanup),
-                    ),
-                  ],
-                );
-              },
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _ActionChip(
+                  label: 'Add Product',
+                  icon: Icons.add,
+                  color: const Color(0xFF2E7D32),
+                  onTap: () => context.push('/admin/upload'),
+                ),
+                _ActionChip(
+                  label: 'Sync Inventory',
+                  icon: Icons.sync,
+                  color: const Color(0xFF0984E3),
+                  onTap: () => _runSync(context, ref, _SyncMode.all),
+                ),
+                _ActionChip(
+                  label: 'Clean Duplicates',
+                  icon: Icons.cleaning_services_outlined,
+                  color: const Color(0xFFFF6B6B),
+                  onTap: () => _runSync(context, ref, _SyncMode.cleanup),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          _SectionPanel(
+          const SizedBox(height: 10),
+
+          // ── Completion bar ────────────────────────────────
+          _Section(
+            title: 'Completion  $completedOrders / ${orders.length}',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                minHeight: 6,
+                value: orders.isEmpty ? 0 : completedOrders / orders.length,
+                backgroundColor: const Color(0xFFE8ECE8),
+                color: const Color(0xFF2E7D32),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // ── Recent orders ─────────────────────────────────
+          _Section(
             title: 'Recent Orders',
             trailing: TextButton(
               onPressed: () => context.go('/admin/orders'),
-              child: const Text('View all'),
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('View all', style: TextStyle(fontSize: 12)),
             ),
             child: orders.isEmpty
-                ? const _EmptyState(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'No orders yet',
-                    message: 'New customer orders will appear here instantly.',
-                  )
+                ? const _Empty(message: 'No orders yet')
                 : Column(
                     children: orders
                         .take(5)
-                        .map((order) => _RecentOrderTile(order: order))
+                        .map((o) => _OrderRow(order: o))
                         .toList(),
                   ),
-          ),
-          const SizedBox(height: 16),
-          _SectionPanel(
-            title: 'Completion',
-            child: LinearProgressIndicator(
-              minHeight: 10,
-              borderRadius: BorderRadius.circular(99),
-              value: orders.isEmpty ? 0 : completedOrders / orders.length,
-              backgroundColor: const Color(0xFFE8ECE8),
-              color: const Color(0xFF2E7D32),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _runSync(
-    BuildContext context,
-    WidgetRef ref,
-    _SyncMode mode,
-  ) async {
+  Future<void> _runSync(BuildContext context, WidgetRef ref, _SyncMode mode) async {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-
     try {
       switch (mode) {
-        case _SyncMode.all:
-          await DataSetupService.initializeInventory();
-          break;
-        case _SyncMode.special:
-          await DataSetupService.forceRepairSpecialized();
-          break;
+        case _SyncMode.all:     await DataSetupService.initializeInventory(); break;
+        case _SyncMode.special: await DataSetupService.forceRepairSpecialized(); break;
         case _SyncMode.cleanup:
           await DataSetupService.cleanupAllDuplicates();
           await DataSetupService.initializeInventory();
           break;
       }
-
       ref.invalidate(allProductsProvider);
       ref.invalidate(adminOrdersProvider);
-      for (final id in ['1', '2', '3', '4']) {
-        ref.invalidate(productsProvider(id));
-      }
-
+      for (final id in ['1', '2', '3', '4']) ref.invalidate(productsProvider(id));
       if (!context.mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -207,7 +145,7 @@ class AdminOverviewTab extends ConsumerWidget {
       if (!context.mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Inventory update failed: $error')),
+        SnackBar(content: Text('Failed: $error')),
       );
     }
   }
@@ -215,168 +153,75 @@ class AdminOverviewTab extends ConsumerWidget {
 
 enum _SyncMode { all, special, cleanup }
 
+// ─── Users Tab ───────────────────────────────────────────────────────────────
+
 class AdminUsersTab extends ConsumerWidget {
   const AdminUsersTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(allUsersProvider);
-
     return usersAsync.when(
       data: (users) {
-        final admins = users.where((user) => user.role == 'admin').length;
-        final riders = users.where((user) => user.role == 'rider').length;
-        final customers = users.where((user) => user.role == 'customer').length;
+        final admins    = users.where((u) => u.role == 'admin').length;
+        final riders    = users.where((u) => u.role == 'rider').length;
+        final customers = users.where((u) => u.role == 'customer').length;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
           children: [
-            _LiveHeader(
-              title: 'Users',
-              subtitle: 'Accounts update in real time as people join.',
+            Row(
+              children: [
+                _Stat(label: 'Total',     value: '${users.length}', icon: Icons.people_outline,              color: const Color(0xFF0984E3)),
+                _Stat(label: 'Admins',    value: '$admins',          icon: Icons.admin_panel_settings_outlined, color: const Color(0xFF2E7D32)),
+                _Stat(label: 'Riders',    value: '$riders',          icon: Icons.delivery_dining_outlined,    color: const Color(0xFF00B894)),
+                _Stat(label: 'Customers', value: '$customers',       icon: Icons.person_outline,              color: const Color(0xFFFDAA5E)),
+              ],
             ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 760 ? 4 : 2;
-                return GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: columns,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: columns == 4 ? 2.5 : 2.0,
-                  children: [
-                    _MetricCard(
-                      label: 'Total',
-                      value: '${users.length}',
-                      icon: Icons.people_outline,
-                      color: const Color(0xFF0984E3),
-                    ),
-                    _MetricCard(
-                      label: 'Admins',
-                      value: '$admins',
-                      icon: Icons.admin_panel_settings_outlined,
-                      color: const Color(0xFF2E7D32),
-                    ),
-                    _MetricCard(
-                      label: 'Riders',
-                      value: '$riders',
-                      icon: Icons.delivery_dining_outlined,
-                      color: const Color(0xFF00B894),
-                    ),
-                    _MetricCard(
-                      label: 'Customers',
-                      value: '$customers',
-                      icon: Icons.person_outline,
-                      color: const Color(0xFFFDAA5E),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             if (users.isEmpty)
-              const _EmptyState(
-                icon: Icons.people_outline,
-                title: 'No users found',
-                message: 'User accounts will appear here.',
-              )
+              const _Empty(message: 'No users found')
             else
-              ...users.map((user) => _UserTile(user: user)),
+              ...users.map((u) => _UserRow(user: u)),
           ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Error: $error')),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
 }
+
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
 
 class AdminSettingsTab extends StatelessWidget {
   const AdminSettingsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-      children: const [
-        _LiveHeader(
-          title: 'Settings',
-          subtitle: 'Profile and shop preferences live here.',
-        ),
-        SizedBox(height: 16),
-        _EmptyState(
-          icon: Icons.settings_outlined,
-          title: 'Settings coming soon',
-          message: 'Core admin actions are available from the dashboard.',
-        ),
-      ],
-    );
-  }
-}
-
-class _LiveHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const _LiveHeader({
-    required this.title,
-    required this.subtitle,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: _panelDecoration(),
-      child: Row(
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.lato(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.lato(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(width: 12),
-            FilledButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(actionLabel!),
-            ),
-          ] else
-            const LiveIndicator(),
+          Icon(Icons.settings_outlined, size: 40, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('Settings coming soon', style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
   }
 }
 
-class _MetricCard extends StatelessWidget {
+// ─── Shared small widgets ─────────────────────────────────────────────────────
+
+/// A compact stat tile — takes 1/4 of row width.
+class _Stat extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
   final Color color;
 
-  const _MetricCard({
+  const _Stat({
     required this.label,
     required this.value,
     required this.icon,
@@ -385,108 +230,94 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: _panelDecoration(),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.all(3),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE8ECE8)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
             ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lato(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lato(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SectionPanel extends StatelessWidget {
+/// A thin bordered section with title.
+class _Section extends StatelessWidget {
   final String title;
   final Widget child;
   final Widget? trailing;
 
-  const _SectionPanel({
-    required this.title,
-    required this.child,
-    this.trailing,
-  });
+  const _Section({required this.title, required this.child, this.trailing});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _panelDecoration(),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE8ECE8)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.lato(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                 ),
-              ),
-              if (trailing != null) trailing!,
-            ],
+                if (trailing != null) trailing!,
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          child,
+          const Divider(height: 10, thickness: 0.5),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: child,
+          ),
         ],
       ),
     );
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final bool wide;
+/// A small chip-style action button.
+class _ActionChip extends StatelessWidget {
   final String label;
-  final String subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionButton({
-    required this.wide,
+  const _ActionChip({
     required this.label,
-    required this.subtitle,
     required this.icon,
     required this.color,
     required this.onTap,
@@ -494,114 +325,118 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: wide ? 220 : double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, color: color),
-        label: Align(
-          alignment: Alignment.centerLeft,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.all(14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 5),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+          ],
         ),
       ),
     );
   }
 }
 
-class _RecentOrderTile extends StatelessWidget {
+/// Compact order row.
+class _OrderRow extends StatelessWidget {
   final OrderModel order;
-
-  const _RecentOrderTile({required this.order});
+  const _OrderRow({required this.order});
 
   @override
   Widget build(BuildContext context) {
+    final status = order.orderStatus;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(order.orderStatus.icon, color: order.orderStatus.color),
-          const SizedBox(width: 12),
+          Icon(status.icon, color: status.color, size: 18),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Order ${order.shortId}',
-                  style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                 ),
                 Text(
-                  '${order.totalItems} items, ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
-                  style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
+                  '${order.totalItems} items · ${DateFormat.MMMd().add_jm().format(order.createdAt)}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
             ),
           ),
-          OrderStatusBadge(status: order.orderStatus, compact: true),
+          OrderStatusBadge(status: status, compact: true),
         ],
       ),
     );
   }
 }
 
-class _UserTile extends StatelessWidget {
+/// Compact user row.
+class _UserRow extends StatelessWidget {
   final AppUser user;
-
-  const _UserTile({required this.user});
+  const _UserRow({required this.user});
 
   @override
   Widget build(BuildContext context) {
     final color = switch (user.role) {
-      'admin' => const Color(0xFF2E7D32),
-      'rider' => const Color(0xFF00B894),
-      _ => const Color(0xFFFDAA5E),
+      'admin'  => const Color(0xFF2E7D32),
+      'rider'  => const Color(0xFF00B894),
+      _        => const Color(0xFF0984E3),
     };
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: _panelDecoration(),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: color.withValues(alpha: 0.12),
-            child: Icon(Icons.person_outline, color: color),
+            radius: 16,
+            backgroundColor: color.withValues(alpha: 0.1),
+            child: Icon(Icons.person_outline, color: color, size: 16),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(user.name, style: GoogleFonts.lato(fontWeight: FontWeight.w800)),
+                Text(
+                  user.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
                 Text(
                   user.email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
             ),
           ),
-          Chip(
-            label: Text(user.role.toUpperCase()),
-            side: BorderSide.none,
-            backgroundColor: color.withValues(alpha: 0.12),
-            labelStyle: TextStyle(color: color, fontWeight: FontWeight.w800),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              user.role.toUpperCase(),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color),
+            ),
           ),
         ],
       ),
@@ -609,54 +444,17 @@ class _UserTile extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
+class _Empty extends StatelessWidget {
   final String message;
-
-  const _EmptyState({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
+  const _Empty({required this.message});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAF8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 42, color: Colors.grey[500]),
-          const SizedBox(height: 10),
-          Text(title, style: GoogleFonts.lato(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.lato(color: Colors.grey[600]),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Text(message, style: TextStyle(color: Colors.grey[400], fontSize: 13)),
       ),
     );
   }
-}
-
-BoxDecoration _panelDecoration() {
-  return BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(color: const Color(0xFFE8ECE8)),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.03),
-        blurRadius: 10,
-        offset: const Offset(0, 3),
-      ),
-    ],
-  );
 }
