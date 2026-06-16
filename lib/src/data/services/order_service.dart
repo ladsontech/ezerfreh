@@ -22,7 +22,9 @@ class OrderService {
 
     if (riderId != null) {
       data['riderId'] = riderId;
-      data['assignedAt'] = FieldValue.serverTimestamp();
+      if (status == OrderStatus.assigned) {
+        data['assignedAt'] = FieldValue.serverTimestamp();
+      }
     }
 
     await _firestore.collection('orders').doc(orderId).update(data);

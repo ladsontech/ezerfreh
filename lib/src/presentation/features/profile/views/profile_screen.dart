@@ -11,355 +11,532 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authService = ref.watch(authServiceProvider);
     final user = authService.currentUser;
-    final colorScheme = Theme.of(context).colorScheme;
 
     if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.bold))),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.lock_person_outlined,
-                size: 80,
-                color: colorScheme.primary.withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Sign in to access your profile',
-                style: GoogleFonts.lato(fontSize: 18, color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                onPressed: () => context.go('/login'),
-                child: const Text('Login / Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _SignedOutProfile(onLogin: () => context.go('/login'));
     }
 
     final profileStream = ref.watch(userProfileProvider(user.uid));
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
-      appBar: AppBar(
-        title: const Text('My Profile'),
-      ),
-      body: profileStream.when(
-        data: (profile) {
-          if (!profile.exists || profile.data() == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.person_add_outlined,
-                    size: 80,
-                    color: colorScheme.primary.withValues(alpha: 0.3),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('You haven\'t created a profile yet.'),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: () => context.push('/create-profile'),
-                    child: const Text('Complete Your Profile'),
-                  ),
-                ],
-              ),
-            );
-          }
-          final data = profile.data() as Map<String, dynamic>;
-          
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 760;
-              final content = _buildContent(context, data, user.email, colorScheme, ref);
+    return profileStream.when(
+      data: (profile) {
+        final data = profile.data() as Map<String, dynamic>?;
 
-              if (isWide) {
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: content,
-                  ),
-                );
-              }
-              return content;
-            },
+        if (!profile.exists || data == null) {
+          return _MissingProfile(
+            email: user.email,
+            onCreateProfile: () => context.push('/create-profile'),
+            onSignOut: () => _signOut(context, ref),
           );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('An error occurred: $err')),
+        }
+
+        return _ProfileContent(
+          data: data,
+          authEmail: user.email,
+          onEdit: () => context.push('/create-profile'),
+          onSignOut: () => _signOut(context, ref),
+          onDelete: () => _showDeleteAccountDialog(context),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _SimpleMessage(
+        icon: Icons.error_outline,
+        title: 'Could not load profile',
+        message: '$error',
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, Map<String, dynamic> data,
-      String? authEmail, ColorScheme colorScheme, WidgetRef ref) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Card
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const CircleAvatar(
-                    radius: 46,
-                    backgroundColor: Color(0xFFF0F5F0),
-                    child: Icon(Icons.person_outline, size: 46, color: Colors.green),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  data['name'] ?? 'Customer',
-                  style: GoogleFonts.lato(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  data['email'] ?? authEmail ?? 'No email',
-                  style: GoogleFonts.lato(
-                    fontSize: 15,
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.push('/create-profile'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: colorScheme.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 32),
-          
-          Text(
-            'Personal Information',
-            style: GoogleFonts.lato(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Info Cards Container
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                _buildListTile(
-                  icon: Icons.person_outline,
-                  title: 'Name',
-                  subtitle: data['name'] ?? 'Not set',
-                ),
-                const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-                _buildListTile(
-                  icon: Icons.email_outlined,
-                  title: 'Email Address',
-                  subtitle: data['email'] ?? authEmail ?? 'Not set',
-                ),
-                const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-                _buildListTile(
-                  icon: Icons.phone_outlined,
-                  title: 'Phone Number',
-                  subtitle: data['contact'] ?? 'Not set',
-                ),
-                const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-                _buildListTile(
-                  icon: Icons.location_on_outlined,
-                  title: 'Delivery Address',
-                  subtitle: data['apartmentSuite'] != null && data['apartmentSuite'].toString().isNotEmpty
-                      ? '${data['address']} (${data['apartmentSuite']})'
-                      : (data['address'] ?? 'Not set'),
-                ),
-              ],
-            ),
-          ),
-          // Ezer Logo and Account Management at the very bottom
-          Column(
-            children: [
-              TextButton(
-                onPressed: () {}, // Could navigate to 'About Us' or similar
-                style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)),
-                ),
-                child: Image.asset(
-                  'assets/ezerlogo.png',
-                  height: 60,
-                  opacity: const AlwaysStoppedAnimation(0.6),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'EZER FRESH v1.0.0',
-                style: GoogleFonts.lato(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                  color: Colors.grey[400],
-                ),
-              ),
-              const SizedBox(height: 32),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: () async {
-                        final authService = ref.read(authServiceProvider);
-                        await authService.signOut();
-                        if (context.mounted) context.go('/login');
-                      },
-                      icon: const Icon(Icons.logout, size: 18),
-                      label: const Text('Sign Out'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.red[50],
-                        foregroundColor: Colors.red[700],
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => _showDeleteAccountDialog(context),
-                      icon: const Icon(Icons.delete_forever, size: 18),
-                      label: const Text('Delete Account'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red[400],
-                        side: BorderSide(color: Colors.red[100]!),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 48),
-            ],
-          ),
-        ],
-      ),
-    );
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(authServiceProvider).signOut();
+    if (context.mounted) context.go('/login');
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account?'),
+        title: const Text('Delete account?'),
         content: const Text(
-            'This action is permanent and will delete all your order history and profile data.'),
+          'This request is permanent and will remove your profile and account data.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              // Implementation for actual deletion would go here
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content: Text(
-                        'Request sent. Your account will be deleted within 24 hours.')),
+                  content: Text('Account deletion request sent.'),
+                ),
               );
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildListTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
+class _ProfileContent extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final String? authEmail;
+  final VoidCallback onEdit;
+  final VoidCallback onSignOut;
+  final VoidCallback onDelete;
+
+  const _ProfileContent({
+    required this.data,
+    required this.authEmail,
+    required this.onEdit,
+    required this.onSignOut,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final name = _value(data['name'], fallback: 'Your Name');
+    final email = _value(data['email'], fallback: authEmail ?? 'No email');
+    final role = _value(data['role'], fallback: 'customer');
+    final phone = _value(data['contact']);
+    final address = _address(data);
+    final initials = _initials(name);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+              children: [
+                _HeaderCard(
+                  initials: initials,
+                  name: name,
+                  email: email,
+                  role: role,
+                  onEdit: onEdit,
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Account',
+                  children: [
+                    _ProfileRow(
+                      icon: Icons.person_outline,
+                      label: 'Name',
+                      value: name,
+                    ),
+                    _ProfileRow(
+                      icon: Icons.email_outlined,
+                      label: 'Email',
+                      value: email,
+                    ),
+                    _ProfileRow(
+                      icon: Icons.phone_outlined,
+                      label: 'Phone',
+                      value: phone,
+                    ),
+                    _ProfileRow(
+                      icon: Icons.location_on_outlined,
+                      label: 'Address',
+                      value: address,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'App',
+                  children: [
+                    _ActionRow(
+                      icon: Icons.edit_outlined,
+                      label: 'Edit profile',
+                      onTap: onEdit,
+                    ),
+                    const _ProfileRow(
+                      icon: Icons.info_outline,
+                      label: 'Version',
+                      value: 'Ezer Fresh 1.0.5',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Session',
+                  children: [
+                    _ActionRow(
+                      icon: Icons.logout,
+                      label: 'Sign out',
+                      color: Colors.red,
+                      onTap: onSignOut,
+                    ),
+                    _ActionRow(
+                      icon: Icons.delete_outline,
+                      label: 'Delete account',
+                      color: Colors.red,
+                      onTap: onDelete,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static String _address(Map<String, dynamic> data) {
+    final address = _value(data['address']);
+    final suite = _value(data['apartmentSuite'], fallback: '');
+    if (address == 'Not set') return address;
+    if (suite.isEmpty) return address;
+    return '$address, $suite';
+  }
+}
+
+class _HeaderCard extends StatelessWidget {
+  final String initials;
+  final String name;
+  final String email;
+  final String role;
+  final VoidCallback onEdit;
+
+  const _HeaderCard({
+    required this.initials,
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final roleColor = _roleColor(role);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: roleColor.withValues(alpha: 0.12),
+            child: Text(
+              initials,
+              style: GoogleFonts.lato(
+                color: roleColor,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lato(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lato(color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: roleColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    role.toUpperCase(),
+                    style: GoogleFonts.lato(
+                      color: roleColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Edit profile',
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _SectionCard({
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+            child: Text(
+              title,
+              style: GoogleFonts.lato(
+                color: Colors.grey[600],
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          ..._withDividers(children),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _withDividers(List<Widget> rows) {
+    final widgets = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      widgets.add(rows[i]);
+      if (i != rows.length - 1) {
+        widgets.add(const Divider(height: 1, indent: 56));
+      }
+    }
+    return widgets;
+  }
+}
+
+class _ProfileRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _ProfileRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.green.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: Colors.green),
+      leading: Icon(icon, color: const Color(0xFF2E7D32)),
+      title: Text(label),
+      subtitle: Text(
+        value,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+  final VoidCallback onTap;
+
+  const _ActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rowColor = color ?? Colors.black87;
+
+    return ListTile(
+      leading: Icon(icon, color: rowColor),
       title: Text(
-        title,
-        style: const TextStyle(fontSize: 13, color: Colors.grey),
+        label,
+        style: TextStyle(color: rowColor, fontWeight: FontWeight.w600),
       ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4.0),
-        child: Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+    );
+  }
+}
+
+class _SignedOutProfile extends StatelessWidget {
+  final VoidCallback onLogin;
+
+  const _SignedOutProfile({required this.onLogin});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SimpleMessage(
+      icon: Icons.lock_person_outlined,
+      title: 'Sign in to view your profile',
+      message: 'Your account details and settings will appear here.',
+      action: FilledButton(
+        onPressed: onLogin,
+        child: const Text('Login / Sign Up'),
+      ),
+    );
+  }
+}
+
+class _MissingProfile extends StatelessWidget {
+  final String? email;
+  final VoidCallback onCreateProfile;
+  final VoidCallback onSignOut;
+
+  const _MissingProfile({
+    required this.email,
+    required this.onCreateProfile,
+    required this.onSignOut,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 40, 16, 96),
+      children: [
+        _SimpleMessage(
+          icon: Icons.person_add_outlined,
+          title: 'Complete your profile',
+          message: email ?? 'Add your details so the app can serve you better.',
+          action: FilledButton(
+            onPressed: onCreateProfile,
+            child: const Text('Complete Profile'),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton.icon(
+            onPressed: onSignOut,
+            icon: const Icon(Icons.logout),
+            label: const Text('Sign out'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SimpleMessage extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final Widget? action;
+
+  const _SimpleMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 56, color: const Color(0xFF2E7D32)),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(color: Colors.grey[600]),
+              ),
+              if (action != null) ...[
+                const SizedBox(height: 18),
+                action!,
+              ],
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+String _value(dynamic value, {String fallback = 'Not set'}) {
+  final text = value?.toString().trim() ?? '';
+  return text.isEmpty ? fallback : text;
+}
+
+String _initials(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return 'EF';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+      .toUpperCase();
+}
+
+Color _roleColor(String role) {
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return const Color(0xFF2E7D32);
+    case 'rider':
+      return const Color(0xFF00B894);
+    default:
+      return const Color(0xFFFDAA5E);
+  }
+}
+
+BoxDecoration _cardDecoration() {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: const Color(0xFFE8ECE8)),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.03),
+        blurRadius: 10,
+        offset: const Offset(0, 3),
+      ),
+    ],
+  );
 }

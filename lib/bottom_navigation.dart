@@ -26,8 +26,10 @@ class _BottomNavigationState extends State<BottomNavigation> {
       case 'admin':
         return [
           const AdminOverviewTab(),
-          const AdminOrdersScreen(isTab: true),
           const AdminProductsListScreen(isTab: true),
+          const AdminOrdersScreen(isTab: true),
+          const AdminUsersTab(),
+          const ProfileScreen(),
         ];
       case 'rider':
         return [
@@ -54,12 +56,20 @@ class _BottomNavigationState extends State<BottomNavigation> {
             label: 'Dashboard',
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.list),
+            icon: Icon(Icons.inventory_2),
+            label: 'Products',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
             label: 'Orders',
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2),
-            label: 'Products',
+            icon: Icon(Icons.people),
+            label: 'Users',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ];
       case 'rider':
@@ -107,6 +117,13 @@ class _BottomNavigationState extends State<BottomNavigation> {
     return Scaffold(
       body: _getScreens()[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        elevation: 12,
+        selectedItemColor: const Color(0xFF2E7D32),
+        unselectedItemColor: const Color(0xFF7A7F7A),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
         items: _getNavbarItems(),
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

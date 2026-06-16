@@ -280,6 +280,14 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
   bool _updating = false;
   bool _navigating = false;
 
+  static const _riderStatuses = [
+    OrderStatus.assigned,
+    OrderStatus.pickedUp,
+    OrderStatus.onTheWay,
+    OrderStatus.arrived,
+    OrderStatus.completed,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
@@ -355,6 +363,46 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
             ],
           ),
           const SizedBox(height: 10),
+          Text(
+            'Set delivery status',
+            style: GoogleFonts.lato(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _riderStatuses.map((targetStatus) {
+              final selected = status == targetStatus;
+              return ChoiceChip(
+                selected: selected,
+                showCheckmark: false,
+                avatar: Icon(
+                  targetStatus.icon,
+                  size: 14,
+                  color: selected ? Colors.white : targetStatus.color,
+                ),
+                label: Text(targetStatus.label),
+                labelStyle: GoogleFonts.lato(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: selected ? Colors.white : Colors.black87,
+                ),
+                selectedColor: targetStatus.color,
+                backgroundColor: targetStatus.color.withValues(alpha: 0.08),
+                side: BorderSide(
+                  color: targetStatus.color.withValues(alpha: 0.18),
+                ),
+                onSelected: selected || _updating
+                    ? null
+                    : (_) => _setDeliveryStatus(targetStatus),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               if (canAdvance)
@@ -421,6 +469,40 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Order ${widget.order.shortId} updated to ${next?.label ?? 'next status'}.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Update failed: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
+  }
+
+  Future<void> _setDeliveryStatus(OrderStatus status) async {
+    final riderId = widget.riderId;
+    if (riderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to update deliveries.')),
+      );
+      return;
+    }
+
+    setState(() => _updating = true);
+    try {
+      await ref.read(orderServiceProvider).updateStatus(
+            widget.order.id,
+            status,
+            riderId: riderId,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Order ${widget.order.shortId} updated to ${status.label}.',
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;

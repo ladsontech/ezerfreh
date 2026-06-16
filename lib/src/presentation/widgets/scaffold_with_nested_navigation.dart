@@ -1,8 +1,7 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/presentation/widgets/sticky_cart_bar.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -23,42 +22,26 @@ class ScaffoldWithNestedNavigation extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final role = ref.watch(userRoleProvider).value;
+    final role = ref.watch(userRoleProvider).value ?? 'customer';
     final isWide = MediaQuery.sizeOf(context).width >= 800;
-    final destinations = _getDestinations(role ?? 'customer');
-    final brandColor = _getBrandColor(role ?? 'customer');
+    final destinations = _getDestinations(role);
+    final brandColor = _getBrandColor(role);
 
     final cartItems = ref.watch(cartProvider);
     final hasCartItems = cartItems.isNotEmpty;
-    final showStickyCart = (role ?? 'customer') == 'customer' &&
-        navigationShell.currentIndex != 1 &&
-        hasCartItems;
+    final showStickyCart =
+        role == 'customer' && navigationShell.currentIndex != 1 && hasCartItems;
 
-    Widget mobileBody = navigationShell;
+    Widget body = navigationShell;
     if (showStickyCart) {
-      mobileBody = Stack(
+      body = Stack(
         children: [
           navigationShell,
-          const Positioned(
-            left: 16,
-            right: 16,
-            bottom: 96,
-            child: StickyCartBar(bottomOffset: 0),
-          ),
-        ],
-      );
-    }
-
-    Widget desktopBody = navigationShell;
-    if (showStickyCart) {
-      desktopBody = Stack(
-        children: [
-          navigationShell,
-          const Positioned(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: StickyCartBar(bottomOffset: 0),
+          Positioned(
+            left: isWide ? 20 : 16,
+            right: isWide ? 20 : 16,
+            bottom: isWide ? 20 : 84,
+            child: const StickyCartBar(bottomOffset: 0),
           ),
         ],
       );
@@ -73,18 +56,16 @@ class ScaffoldWithNestedNavigation extends ConsumerWidget {
               selectedIndex: navigationShell.currentIndex,
               onTap: _onTap,
               brandColor: brandColor,
-              role: role ?? 'customer',
             ),
-            Expanded(child: desktopBody),
+            Expanded(child: body),
           ],
         ),
       );
     }
 
     return Scaffold(
-      extendBody: true,
-      body: mobileBody,
-      bottomNavigationBar: _AnimatedBottomBar(
+      body: body,
+      bottomNavigationBar: _FixedBottomBar(
         destinations: destinations,
         selectedIndex: navigationShell.currentIndex,
         onTap: _onTap,
@@ -99,6 +80,8 @@ class ScaffoldWithNestedNavigation extends ConsumerWidget {
         return const Color(0xFF2E7D32);
       case 'rider':
         return const Color(0xFF00B894);
+      case 'guest':
+        return const Color(0xFF0984E3);
       default:
         return const Color(0xFF2E7D32);
     }
@@ -106,37 +89,87 @@ class ScaffoldWithNestedNavigation extends ConsumerWidget {
 
   List<_NavItem> _getDestinations(String role) {
     if (role == 'admin') {
-      return [
-        const _NavItem(icon: Icons.grid_view_outlined, selectedIcon: Icons.grid_view_rounded, label: 'Dashboard'),
-        const _NavItem(icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: 'Products'),
-        const _NavItem(icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
-      ];
-    } else if (role == 'rider') {
-      return [
-        const _NavItem(icon: Icons.delivery_dining_outlined, selectedIcon: Icons.delivery_dining, label: 'Deliveries'),
-        const _NavItem(icon: Icons.history_outlined, selectedIcon: Icons.history, label: 'History'),
-        const _NavItem(icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
-      ];
-    } else {
-      return [
-        const _NavItem(icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
-        const _NavItem(icon: Icons.shopping_cart_outlined, selectedIcon: Icons.shopping_cart, label: 'Cart'),
-        const _NavItem(icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, label: 'Orders'),
-        const _NavItem(icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
+      return const [
+        _NavItem(
+          icon: Icons.grid_view_outlined,
+          selectedIcon: Icons.grid_view_rounded,
+          label: 'Dashboard',
+        ),
+        _NavItem(
+          icon: Icons.inventory_2_outlined,
+          selectedIcon: Icons.inventory_2,
+          label: 'Products',
+        ),
+        _NavItem(
+          icon: Icons.receipt_long_outlined,
+          selectedIcon: Icons.receipt_long,
+          label: 'Orders',
+        ),
+        _NavItem(
+          icon: Icons.people_outline,
+          selectedIcon: Icons.people,
+          label: 'Users',
+        ),
+        _NavItem(
+          icon: Icons.person_outline,
+          selectedIcon: Icons.person,
+          label: 'Profile',
+        ),
       ];
     }
+
+    if (role == 'rider') {
+      return const [
+        _NavItem(
+          icon: Icons.delivery_dining_outlined,
+          selectedIcon: Icons.delivery_dining,
+          label: 'Deliveries',
+        ),
+        _NavItem(
+          icon: Icons.history_outlined,
+          selectedIcon: Icons.history,
+          label: 'History',
+        ),
+        _NavItem(
+          icon: Icons.person_outline,
+          selectedIcon: Icons.person,
+          label: 'Profile',
+        ),
+      ];
+    }
+
+    return const [
+      _NavItem(
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home_rounded,
+        label: 'Home',
+      ),
+      _NavItem(
+        icon: Icons.shopping_cart_outlined,
+        selectedIcon: Icons.shopping_cart,
+        label: 'Cart',
+      ),
+      _NavItem(
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long,
+        label: 'Orders',
+      ),
+      _NavItem(
+        icon: Icons.person_outline,
+        selectedIcon: Icons.person,
+        label: 'Profile',
+      ),
+    ];
   }
 }
 
-// ─── Premium Animated Bottom Bar ────────────────────────────────────────────
-
-class _AnimatedBottomBar extends StatelessWidget {
+class _FixedBottomBar extends StatelessWidget {
   final List<_NavItem> destinations;
   final int selectedIndex;
   final ValueChanged<int> onTap;
   final Color brandColor;
 
-  const _AnimatedBottomBar({
+  const _FixedBottomBar({
     required this.destinations,
     required this.selectedIndex,
     required this.onTap,
@@ -145,48 +178,33 @@ class _AnimatedBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = destinations.length > 4;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.6),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: brandColor.withValues(alpha: 0.08),
-                  blurRadius: 32,
-                  offset: const Offset(0, 12),
-                  spreadRadius: 0,
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(destinations.length, (index) {
-                return _AnimatedNavItem(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 68,
+          child: Row(
+            children: List.generate(destinations.length, (index) {
+              return Expanded(
+                child: _FixedNavItem(
                   item: destinations[index],
                   isSelected: selectedIndex == index,
                   brandColor: brandColor,
                   onTap: () => onTap(index),
-                  isCompact: isCompact,
-                );
-              }),
-            ),
+                ),
+              );
+            }),
           ),
         ),
       ),
@@ -194,144 +212,131 @@ class _AnimatedBottomBar extends StatelessWidget {
   }
 }
 
-class _AnimatedNavItem extends ConsumerWidget {
+class _FixedNavItem extends ConsumerWidget {
   final _NavItem item;
   final bool isSelected;
   final Color brandColor;
   final VoidCallback onTap;
-  final bool isCompact;
 
-  const _AnimatedNavItem({
+  const _FixedNavItem({
     required this.item,
     required this.isSelected,
     required this.brandColor,
     required this.onTap,
-    required this.isCompact,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cartItems = ref.watch(cartProvider);
-    final cartCount = cartItems.fold<int>(0, (sum, i) => sum + i.quantity);
+    final cartCount = cartItems.fold<int>(0, (sum, item) => sum + item.quantity);
+    final iconColor = isSelected ? brandColor : const Color(0xFF7A7F7A);
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected 
-              ? (isCompact ? 12 : 18) 
-              : (isCompact ? 8 : 14),
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? brandColor.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AnimatedScale(
-                  scale: isSelected ? 1.15 : 1.0,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutBack,
-                  child: Icon(
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: isSelected ? brandColor : Colors.transparent,
+                width: 3,
+              ),
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
                     isSelected ? item.selectedIcon : item.icon,
-                    color: isSelected ? brandColor : const Color(0xFFB0B0B0),
-                    size: isCompact ? 22 : 24,
+                    color: iconColor,
+                    size: 23,
                   ),
-                ),
-                if (item.label == 'Cart' && cartCount > 0)
-                  Positioned(
-                    right: -6,
-                    top: -6,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$cartCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                  if (item.label == 'Cart' && cartCount > 0)
+                    Positioned(
+                      right: -7,
+                      top: -7,
+                      child: _CartBadge(count: cartCount),
                     ),
-                  ),
-              ],
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              child: isSelected
-                  ? Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        item.label,
-                        style: GoogleFonts.lato(
-                          color: brandColor,
-                          fontSize: isCompact ? 11.5 : 13,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.lato(
+                  color: iconColor,
+                  fontSize: destinationsLabelSize(item.label),
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  double destinationsLabelSize(String label) {
+    return label.length > 9 ? 10 : 11;
+  }
+}
+
+class _CartBadge extends StatelessWidget {
+  final int count;
+
+  const _CartBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFF3B30),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          count > 99 ? '99+' : '$count',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 }
-
-// ─── Desktop Side Rail ──────────────────────────────────────────────────────
 
 class _DesktopSideRail extends StatelessWidget {
   final List<_NavItem> destinations;
   final int selectedIndex;
   final ValueChanged<int> onTap;
   final Color brandColor;
-  final String role;
 
   const _DesktopSideRail({
     required this.destinations,
     required this.selectedIndex,
     required this.onTap,
     required this.brandColor,
-    required this.role,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 80,
+      width: 84,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          right: BorderSide(color: Colors.grey.shade100),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(2, 0),
-          ),
-        ],
+        border: Border(right: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Column(
         children: [
@@ -342,12 +347,8 @@ class _DesktopSideRail extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [brandColor, brandColor.withValues(alpha: 0.7)],
-                ),
-                borderRadius: BorderRadius.circular(14),
+                color: brandColor,
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: Text(
@@ -361,18 +362,13 @@ class _DesktopSideRail extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
           ...List.generate(destinations.length, (index) {
-            final item = destinations[index];
-            final isSelected = selectedIndex == index;
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: _DesktopNavButton(
-                item: item,
-                isSelected: isSelected,
-                brandColor: brandColor,
-                onTap: () => onTap(index),
-              ),
+            return _DesktopNavButton(
+              item: destinations[index],
+              isSelected: selectedIndex == index,
+              brandColor: brandColor,
+              onTap: () => onTap(index),
             );
           }),
         ],
@@ -404,84 +400,72 @@ class _DesktopNavButtonState extends ConsumerState<_DesktopNavButton> {
   @override
   Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
-    final cartCount = cartItems.fold<int>(0, (sum, i) => sum + i.quantity);
+    final cartCount = cartItems.fold<int>(0, (sum, item) => sum + item.quantity);
+    final color = widget.isSelected
+        ? widget.brandColor
+        : (_isHovered ? Colors.black87 : const Color(0xFF7A7F7A));
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 56,
-          height: 52,
-          decoration: BoxDecoration(
-            color: widget.isSelected
-                ? widget.brandColor.withValues(alpha: 0.1)
-                : (_isHovered ? Colors.grey.shade50 : Colors.transparent),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    widget.isSelected ? widget.item.selectedIcon : widget.item.icon,
-                    color: widget.isSelected
-                        ? widget.brandColor
-                        : (_isHovered ? Colors.black54 : const Color(0xFFB0B0B0)),
-                    size: 22,
-                  ),
-                  if (widget.item.label == 'Cart' && cartCount > 0)
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 14,
-                          minHeight: 14,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$cartCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.item.label,
-                style: GoogleFonts.lato(
-                  fontSize: 9,
-                  fontWeight: widget.isSelected ? FontWeight.w800 : FontWeight.w600,
+      child: Material(
+        color: Colors.white,
+        child: InkWell(
+          onTap: widget.onTap,
+          child: Container(
+            width: 84,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
                   color: widget.isSelected
                       ? widget.brandColor
-                      : (_isHovered ? Colors.black54 : const Color(0xFFB0B0B0)),
+                      : Colors.transparent,
+                  width: 3,
                 ),
               ),
-            ],
+            ),
+            child: Column(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      widget.isSelected
+                          ? widget.item.selectedIcon
+                          : widget.item.icon,
+                      color: color,
+                      size: 22,
+                    ),
+                    if (widget.item.label == 'Cart' && cartCount > 0)
+                      Positioned(
+                        right: -7,
+                        top: -7,
+                        child: _CartBadge(count: cartCount),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lato(
+                    fontSize: 9,
+                    fontWeight:
+                        widget.isSelected ? FontWeight.w900 : FontWeight.w700,
+                    color: color,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
-// ─── Nav Item Model ─────────────────────────────────────────────────────────
 
 class _NavItem {
   final IconData icon;
