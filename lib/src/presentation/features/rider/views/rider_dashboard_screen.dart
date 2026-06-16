@@ -56,10 +56,10 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(riderOrdersProvider),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
             children: [
               _RiderHeader(active: active, ready: ready, onRoute: onRoute),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final columns = constraints.maxWidth >= 760 ? 4 : 2;
@@ -67,9 +67,9 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: columns,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: columns == 4 ? 2.4 : 1.8,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: columns == 4 ? 3.0 : 2.2,
                     children: [
                       _RiderStat(label: 'Active', value: '$active', icon: Icons.bolt_outlined),
                       _RiderStat(label: 'Ready', value: '$ready', icon: Icons.storefront_outlined),
@@ -79,14 +79,14 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: Text(
                       'Delivery Queue',
                       style: GoogleFonts.lato(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -94,13 +94,13 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
                   const LiveIndicator(),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               OrderStatusChipBar(
                 selected: _filter,
                 options: _filters,
                 onSelected: (value) => setState(() => _filter = value),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               if (filtered.isEmpty)
                 const _EmptyDeliveries()
               else
@@ -119,12 +119,12 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
                     }
 
                     return Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
+                      spacing: 10,
+                      runSpacing: 10,
                       children: filtered
                           .map(
                             (order) => SizedBox(
-                              width: (constraints.maxWidth - 12) / 2,
+                              width: (constraints.maxWidth - 10) / 2,
                               child: _RiderOrderCard(
                                 order: order,
                                 riderId: riderId,
@@ -181,20 +181,20 @@ class _RiderHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: _cardDecoration(),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: const Color(0xFF00B894).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.delivery_dining, color: Color(0xFF00B894)),
+            child: const Icon(Icons.delivery_dining, color: Color(0xFF00B894), size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,14 +202,13 @@ class _RiderHeader extends StatelessWidget {
                 Text(
                   onRoute > 0 ? 'Deliveries in Progress' : 'Ready for Deliveries',
                   style: GoogleFonts.lato(
-                    fontSize: 21,
+                    fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  '$active active, $ready ready, $onRoute on route',
-                  style: GoogleFonts.lato(color: Colors.grey[600]),
+                  '$active active · $ready ready · $onRoute on route',
+                  style: GoogleFonts.lato(color: Colors.grey[600], fontSize: 12),
                 ),
               ],
             ),
@@ -234,12 +233,12 @@ class _RiderStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF00B894)),
-          const SizedBox(width: 10),
+          Icon(icon, color: const Color(0xFF00B894), size: 18),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -248,11 +247,16 @@ class _RiderStat extends StatelessWidget {
                 Text(
                   value,
                   style: GoogleFonts.lato(
-                    fontSize: 20,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                Text(label, style: GoogleFonts.lato(color: Colors.grey[600])),
+                Text(
+                  label,
+                  style: GoogleFonts.lato(color: Colors.grey[600], fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -285,27 +289,27 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
     final canAdvance = nextStatus != null && nextAction != null && !status.isTerminal;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: _cardDecoration(borderColor: status.color.withValues(alpha: 0.22)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(status.icon, color: status.color),
-              const SizedBox(width: 10),
+              Icon(status.icon, color: status.color, size: 20),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Order ${order.shortId}',
-                      style: GoogleFonts.lato(fontWeight: FontWeight.w900),
+                      style: GoogleFonts.lato(fontWeight: FontWeight.w900, fontSize: 14),
                     ),
                     Text(
                       DateFormat.yMMMd().add_jm().format(order.createdAt),
-                      style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
+                      style: GoogleFonts.lato(fontSize: 11, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -313,61 +317,83 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
               OrderStatusBadge(status: status, compact: true),
             ],
           ),
-          const SizedBox(height: 12),
-          OrderDeliveryTimeline(status: status),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          OrderDeliveryTimeline(status: status, compact: true),
+          const SizedBox(height: 8),
           Text(
             order.items.map((item) => '${item.quantity}x ${item.name}').join(', '),
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12.5),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${order.totalItems} items, UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
-            style: GoogleFonts.lato(fontWeight: FontWeight.w800),
-          ),
-          if (order.fullAddress != null) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 16),
-                const SizedBox(width: 6),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${order.totalItems} items · UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+                style: GoogleFonts.lato(fontWeight: FontWeight.w800, fontSize: 13),
+              ),
+              if (order.fullAddress != null)
                 Expanded(
-                  child: Text(
-                    order.fullAddress!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          order.fullAddress!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (canAdvance)
+                SizedBox(
+                  height: 32,
+                  child: FilledButton.icon(
+                    onPressed: _updating ? null : _advanceStatus,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    icon: _updating
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(nextStatus.icon, size: 14),
+                    label: Text(nextAction),
+                  ),
+                ),
+              if (order.hasLocation) ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 32,
+                  child: OutlinedButton.icon(
+                    onPressed: _navigating ? null : _openNavigation,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    icon: const Icon(Icons.navigation_outlined, size: 14),
+                    label: Text(_navigating ? 'Opening...' : 'Navigate'),
                   ),
                 ),
               ],
-            ),
-          ],
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (canAdvance)
-                FilledButton.icon(
-                  onPressed: _updating ? null : _advanceStatus,
-                  icon: _updating
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(nextStatus.icon, size: 18),
-                  label: Text(nextAction),
-                ),
-              if (order.hasLocation)
-                OutlinedButton.icon(
-                  onPressed: _navigating ? null : _openNavigation,
-                  icon: const Icon(Icons.navigation_outlined, size: 18),
-                  label: Text(_navigating ? 'Opening...' : 'Navigate'),
-                ),
             ],
           ),
         ],
@@ -443,20 +469,20 @@ class _EmptyDeliveries extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(24),
       decoration: _cardDecoration(),
       child: Column(
         children: [
-          Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 10),
+          Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[400]),
+          const SizedBox(height: 8),
           Text(
             'No deliveries in this view',
-            style: GoogleFonts.lato(fontWeight: FontWeight.w900),
+            style: GoogleFonts.lato(fontWeight: FontWeight.w900, fontSize: 14),
           ),
           const SizedBox(height: 4),
           Text(
             'Orders update here automatically.',
-            style: GoogleFonts.lato(color: Colors.grey[600]),
+            style: GoogleFonts.lato(color: Colors.grey[600], fontSize: 12),
           ),
         ],
       ),

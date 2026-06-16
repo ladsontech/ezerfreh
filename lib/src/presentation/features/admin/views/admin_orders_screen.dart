@@ -5,7 +5,6 @@ import 'package:ezer_fresh/src/domain/models/order_status.dart';
 import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class AdminOrdersScreen extends ConsumerStatefulWidget {
@@ -59,16 +58,16 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(adminOrdersProvider),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
         children: [
           _OrdersSummary(orders: orders),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           OrderStatusChipBar(
             selected: _filter,
             options: _filters,
             onSelected: (value) => setState(() => _filter = value),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           if (filtered.isEmpty)
             _EmptyOrders(filter: _filter)
           else
@@ -131,80 +130,47 @@ class _OrdersSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = orders.where((order) => order.orderStatus.isActive).length;
-    final inDelivery = orders.where((order) => order.orderStatus.isDeliveryPhase).length;
-    final revenue = orders
-        .where((order) => order.orderStatus != OrderStatus.cancelled)
-        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+    final active     = orders.where((o) => o.orderStatus.isActive).length;
+    final inDelivery = orders.where((o) => o.orderStatus.isDeliveryPhase).length;
+    final revenue    = orders
+        .where((o) => o.orderStatus != OrderStatus.cancelled)
+        .fold<double>(0, (sum, o) => sum + o.totalAmount);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Order Management',
-                  style: GoogleFonts.lato(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              const LiveIndicator(),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _SummaryPill(label: 'Total', value: '${orders.length}', icon: Icons.receipt_long_outlined),
-              _SummaryPill(label: 'Active', value: '$active', icon: Icons.bolt_outlined),
-              _SummaryPill(label: 'Delivery', value: '$inDelivery', icon: Icons.delivery_dining_outlined),
-              _SummaryPill(
-                label: 'Revenue',
-                value: 'UGX ${NumberFormat.compact().format(revenue)}',
-                icon: Icons.payments_outlined,
-              ),
-            ],
-          ),
-        ],
-      ),
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        _Pill(icon: Icons.receipt_long_outlined, label: 'Total',    value: '${orders.length}'),
+        _Pill(icon: Icons.bolt_outlined,         label: 'Active',   value: '$active'),
+        _Pill(icon: Icons.delivery_dining_outlined, label: 'Delivery', value: '$inDelivery'),
+        _Pill(icon: Icons.payments_outlined,     label: 'Revenue',  value: 'UGX ${NumberFormat.compact().format(revenue)}'),
+      ],
     );
   }
 }
 
-class _SummaryPill extends StatelessWidget {
+class _Pill extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  final IconData icon;
-
-  const _SummaryPill({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
+  const _Pill({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAF8),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE8ECE8)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF2E7D32)),
-          const SizedBox(width: 8),
-          Text('$label: ', style: GoogleFonts.lato(color: Colors.grey[600])),
-          Text(value, style: GoogleFonts.lato(fontWeight: FontWeight.w900)),
+          Icon(icon, size: 13, color: const Color(0xFF2E7D32)),
+          const SizedBox(width: 5),
+          Text('$label: ', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(value,      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -233,8 +199,8 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
     final status = order.orderStatus;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: _cardDecoration(borderColor: status.color.withValues(alpha: 0.22)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,11 +218,11 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
                     children: [
                       Text(
                         'Order ${order.shortId}',
-                        style: GoogleFonts.lato(fontWeight: FontWeight.w900),
+                        style: const TextStyle(fontWeight: FontWeight.w900),
                       ),
                       Text(
                         DateFormat.yMMMd().add_jm().format(order.createdAt),
-                        style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -271,7 +237,7 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
           const SizedBox(height: 12),
           Text(
             '${order.totalItems} items, UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
-            style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+            style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           if (order.fullAddress != null) ...[
             const SizedBox(height: 6),
@@ -298,7 +264,7 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<OrderStatus>(
-              value: status,
+              initialValue: status,
               decoration: const InputDecoration(
                 labelText: 'Update status',
                 border: OutlineInputBorder(),
@@ -330,15 +296,13 @@ class _EmptyOrders extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: _cardDecoration(),
-      child: Column(
-        children: [
-          Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 10),
-          Text(filter == 'All' ? 'No orders yet' : 'No $filter orders'),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Center(
+        child: Text(
+          filter == 'All' ? 'No orders yet' : 'No $filter orders',
+          style: const TextStyle(color: Colors.grey),
+        ),
       ),
     );
   }

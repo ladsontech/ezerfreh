@@ -12,8 +12,9 @@ import 'package:ezer_fresh/src/presentation/features/products/views/product_deta
 import 'package:ezer_fresh/src/presentation/widgets/scaffold_with_nested_navigation.dart';
 import 'package:ezer_fresh/src/presentation/widgets/ezer_header_scaffold.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_dashboard_view.dart';
-import 'package:ezer_fresh/src/presentation/features/admin/views/admin_orders_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_products_list_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/admin/views/admin_orders_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/admin/views/admin_users_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/rider/views/rider_dashboard_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/rider/views/rider_history_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/upload_product_screen.dart';
@@ -136,30 +137,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/admin/orders',
-                builder: (context, state) => const EzerHeaderScaffold(
-                  title: 'Shop Orders',
-                  subtitle: 'Track and process incoming requests',
-                  body: AdminOrdersScreen(isTab: true),
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/admin/users',
-                builder: (context, state) => const EzerHeaderScaffold(
-                  title: 'User Analytics',
-                  subtitle: 'Manage accounts and roles',
-                  body: AdminUsersTab(),
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
                 path: '/admin/profile',
                 builder: (context, state) => const EzerHeaderScaffold(
                   title: 'Admin Profile',
@@ -251,6 +228,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final product = state.extra as Product?;
           return UploadProductScreen(productToEdit: product);
         },
+      ),
+      GoRoute(
+        path: '/admin/orders',
+        builder: (context, state) => const AdminOrdersScreen(isTab: false),
+      ),
+      GoRoute(
+        path: '/admin/users',
+        builder: (context, state) => const AdminUsersScreen(),
       ),
       GoRoute(
         path: '/products',

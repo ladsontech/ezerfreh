@@ -94,83 +94,72 @@ class _AdminProductsListScreenState
     int filteredCount,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 760;
-          final search = Container(
-            height: 52,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+          final search = SizedBox(
+            height: 38,
             child: TextField(
               onChanged: (value) => setState(() => _query = value),
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
                 hintText: 'Search products',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 16),
+                hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                ),
+                filled: true,
+                fillColor: Colors.white,
               ),
             ),
           );
-          final category = Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+          final category = SizedBox(
+            height: 38,
+            child: DropdownButtonFormField<String>(
+              initialValue: _category,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                 ),
-              ],
-            ),
-            child: DropdownButtonHideUnderline(
-                child: DropdownButtonFormField<String>(
-                initialValue: _category,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                 ),
-                style: const TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600),
-                dropdownColor: Colors.white,
-                items: _categories.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _category = value ?? 'All'),
+                filled: true,
+                fillColor: Colors.white,
               ),
+              isDense: true,
+              style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600),
+              dropdownColor: Colors.white,
+              items: _categories.entries
+                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                  .toList(),
+              onChanged: (value) => setState(() => _category = value ?? 'All'),
             ),
           );
 
           final count = Text(
-            '$filteredCount of $totalCount products',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            '$filteredCount / $totalCount',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.grey),
           );
           final addButton = FilledButton.icon(
             onPressed: () => context.push('/admin/upload'),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Product'),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('Add', style: TextStyle(fontSize: 13)),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF2E7D32),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           );
 
@@ -437,8 +426,7 @@ class _ProductImage extends StatelessWidget {
       );
     }
     if (imageUrl.isNotEmpty &&
-        !imageUrl.contains('placeholder') &&
-        !imageUrl.startsWith('assets/')) {
+        !imageUrl.contains('placeholder')) {
       return Image.asset(
         imageUrl,
         fit: BoxFit.cover,

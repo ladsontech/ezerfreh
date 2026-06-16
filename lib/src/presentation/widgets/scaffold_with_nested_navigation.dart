@@ -109,8 +109,6 @@ class ScaffoldWithNestedNavigation extends ConsumerWidget {
       return [
         const _NavItem(icon: Icons.grid_view_outlined, selectedIcon: Icons.grid_view_rounded, label: 'Dashboard'),
         const _NavItem(icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: 'Products'),
-        const _NavItem(icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, label: 'Orders'),
-        const _NavItem(icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Users'),
         const _NavItem(icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
       ];
     } else if (role == 'rider') {
