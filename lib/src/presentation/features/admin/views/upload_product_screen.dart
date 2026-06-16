@@ -20,6 +20,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _unitController = TextEditingController();
+  final _imageUrlController = TextEditingController();
   String? _selectedCategoryId;
 
   XFile? _imageFile; // Works on both Web and Mobile
@@ -32,6 +33,9 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
   @override
   void initState() {
     super.initState();
+    _imageUrlController.addListener(() {
+      setState(() {});
+    });
     if (widget.productToEdit != null) {
       _nameController.text = widget.productToEdit!.name;
       _descriptionController.text = widget.productToEdit!.description;
@@ -39,7 +43,18 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
       _unitController.text = widget.productToEdit!.unit;
       _selectedCategoryId = widget.productToEdit!.categoryId;
       _existingImageUrl = widget.productToEdit!.imageUrl;
+      _imageUrlController.text = widget.productToEdit!.imageUrl;
     }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _unitController.dispose();
+    _imageUrlController.dispose();
+    super.dispose();
   }
 
   final List<Map<String, String>> _categories = [
@@ -61,8 +76,9 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
   }
 
   Future<void> _uploadProduct() async {
-    if (_imageFile == null && _existingImageUrl == null) {
-      _showError('Please select an image.');
+    final manualUrl = _imageUrlController.text.trim();
+    if (_imageFile == null && _existingImageUrl == null && manualUrl.isEmpty) {
+      _showError('Please select an image or enter an image URL.');
       return;
     }
 
@@ -78,7 +94,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     setState(() => _isLoading = true);
 
     try {
-      String imageUrl = _existingImageUrl ?? '';
+      String imageUrl = manualUrl.isNotEmpty ? manualUrl : (_existingImageUrl ?? '');
 
       if (_imageFile != null) {
         final bytes = await _imageFile!.readAsBytes();
@@ -264,26 +280,28 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
         borderRadius: BorderRadius.circular(8),
         child: Image.memory(_previewBytes!, fit: BoxFit.cover),
       );
-    } else if (_existingImageUrl != null) {
-      final url = _existingImageUrl!.trim();
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            errorWidget: (context, url, error) => const Icon(Icons.error),
+    }
+
+    final urlInput = _imageUrlController.text.trim();
+    final url = urlInput.isNotEmpty ? urlInput : (_existingImageUrl ?? '').trim();
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => const Center(
+            child: CircularProgressIndicator(),
           ),
-        );
-      } else if (url.isNotEmpty) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.asset(url, fit: BoxFit.cover),
-        );
-      }
+          errorWidget: (context, url, error) => const Icon(Icons.error),
+        ),
+      );
+    } else if (url.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(url, fit: BoxFit.cover),
+      );
     }
 
     return const Column(
@@ -362,6 +380,11 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _imageUrlController,
+          decoration: _inputDecoration('Image URL (Optional)'),
         ),
       ],
     );
