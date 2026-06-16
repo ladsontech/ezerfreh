@@ -101,16 +101,6 @@ class ScaffoldWithNestedNavigation extends ConsumerWidget {
           label: 'Products',
         ),
         _NavItem(
-          icon: Icons.receipt_long_outlined,
-          selectedIcon: Icons.receipt_long,
-          label: 'Orders',
-        ),
-        _NavItem(
-          icon: Icons.people_outline,
-          selectedIcon: Icons.people,
-          label: 'Users',
-        ),
-        _NavItem(
           icon: Icons.person_outline,
           selectedIcon: Icons.person,
           label: 'Profile',

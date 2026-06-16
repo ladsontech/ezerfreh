@@ -140,8 +140,7 @@ class ProductDetailScreen extends ConsumerWidget {
     final url = product.imageUrl.trim();
 
     // Empty or default asset fallback
-    if (url.isEmpty ||
-        url.startsWith('assets/')) {
+    if (url.isEmpty) {
       return Container(
         color: Colors.grey[200],
         child: const Center(

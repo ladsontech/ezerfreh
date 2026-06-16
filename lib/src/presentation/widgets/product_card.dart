@@ -139,11 +139,7 @@ class ProductCard extends ConsumerWidget {
   Widget _buildProductImage() {
     final url = product.imageUrl.trim();
 
-    if (url.isEmpty ||
-        url == 'assets/vegetables.png' ||
-        url == 'assets/fruits.png' ||
-        url == 'assets/herbs.png' ||
-        url == 'assets/spices.png') {
+    if (url.isEmpty) {
       return Container(
         decoration: BoxDecoration(
           color: const Color(0xFFF1F8F1),

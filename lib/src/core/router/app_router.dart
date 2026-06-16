@@ -74,10 +74,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (role == 'admin' &&
             !loc.startsWith('/admin') &&
             !loc.startsWith('/product-detail') &&
-            !loc.startsWith('/products')) {
+            !loc.startsWith('/products') &&
+            loc != '/create-profile') {
           return '/admin';
         }
-        if (role == 'rider' && !loc.startsWith('/rider')) {
+        if (role == 'rider' && !loc.startsWith('/rider') && loc != '/create-profile') {
           return '/rider';
         }
         if (role == 'customer' && (loc.startsWith('/admin') || loc.startsWith('/rider'))) {

@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
 import 'package:ezer_fresh/src/domain/models/order_status.dart';
 import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.dart';
@@ -13,6 +15,7 @@ class RiderHistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(riderHistoryProvider);
+    final productsAsync = ref.watch(allProductsProvider);
 
     return historyAsync.when(
       data: (orders) {
@@ -26,8 +29,14 @@ class RiderHistoryScreen extends ConsumerWidget {
             .where((order) => order.orderStatus == OrderStatus.completed)
             .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
+        final products = productsAsync.asData?.value ?? [];
+        final imageMap = {for (final p in products) p.id: p.imageUrl};
+
         return RefreshIndicator(
-          onRefresh: () async => ref.invalidate(riderHistoryProvider),
+          onRefresh: () async {
+            ref.invalidate(riderHistoryProvider);
+            ref.invalidate(allProductsProvider);
+          },
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             children: [
@@ -61,7 +70,10 @@ class RiderHistoryScreen extends ConsumerWidget {
                     if (!wide) {
                       return Column(
                         children: orders
-                            .map((order) => _HistoryTile(order: order))
+                            .map((order) => _HistoryTile(
+                                  order: order,
+                                  imageMap: imageMap,
+                                ))
                             .toList(),
                       );
                     }
@@ -73,7 +85,10 @@ class RiderHistoryScreen extends ConsumerWidget {
                           .map(
                             (order) => SizedBox(
                               width: (constraints.maxWidth - 12) / 2,
-                              child: _HistoryTile(order: order),
+                              child: _HistoryTile(
+                                order: order,
+                                imageMap: imageMap,
+                              ),
                             ),
                           )
                           .toList(),
@@ -169,8 +184,9 @@ class _SummaryPill extends StatelessWidget {
 
 class _HistoryTile extends StatelessWidget {
   final OrderModel order;
+  final Map<String, String> imageMap;
 
-  const _HistoryTile({required this.order});
+  const _HistoryTile({required this.order, required this.imageMap});
 
   @override
   Widget build(BuildContext context) {
@@ -178,42 +194,137 @@ class _HistoryTile extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDecoration(borderColor: status.color.withValues(alpha: 0.22)),
-      child: Row(
+      padding: const EdgeInsets.all(14),
+      decoration:
+          _cardDecoration(borderColor: status.color.withValues(alpha: 0.22)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(status.icon, color: status.color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Order ${order.shortId}',
-                  style: GoogleFonts.lato(fontWeight: FontWeight.w900),
-                ),
-                Text(
-                  '${order.totalItems} items, ${DateFormat.yMMMd().format(order.createdAt)}',
-                  style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              Text(
-                'UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
-                style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+              Icon(status.icon, color: status.color, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order ${order.shortId}',
+                      style: GoogleFonts.lato(fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      '${order.totalItems} items, ${DateFormat.yMMMd().format(order.createdAt)}',
+                      style: GoogleFonts.lato(
+                          fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 4),
-              OrderStatusBadge(status: status, compact: true),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+                    style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  OrderStatusBadge(status: status, compact: true),
+                ],
+              ),
             ],
           ),
+
+          // Product images row
+          if (order.items.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: order.items.length,
+                itemBuilder: (context, index) {
+                  final item = order.items[index];
+                  final imgUrl = imageMap[item.productId] ?? '';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6),
+                            border:
+                                Border.all(color: const Color(0xFFE8ECE8)),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: _buildItemImage(imgUrl),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 3, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.65),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(3),
+                                bottomRight: Radius.circular(6),
+                              ),
+                            ),
+                            child: Text(
+                              'x${item.quantity}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 7.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+Widget _buildItemImage(String imageUrl) {
+  final url = imageUrl.trim();
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => Container(color: Colors.grey[100]),
+      errorWidget: (_, __, ___) =>
+          const Icon(Icons.broken_image, size: 14),
+    );
+  }
+  if (url.isNotEmpty) {
+    return Image.asset(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          const Icon(Icons.image_not_supported, size: 14),
+    );
+  }
+  return Container(
+    color: const Color(0xFFF1F8F1),
+    child: const Icon(
+      Icons.shopping_basket_outlined,
+      size: 14,
+      color: Color(0xFFA5D6A7),
+    ),
+  );
 }
 
 class _EmptyHistory extends StatelessWidget {

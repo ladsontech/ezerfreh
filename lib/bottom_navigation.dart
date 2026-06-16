@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_dashboard_view.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_orders_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/admin_products_list_screen.dart';
+import 'package:ezer_fresh/src/presentation/features/admin/views/admin_users_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/cart/views/cart_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/home/views/home_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/orders/views/orders_screen.dart';
@@ -28,7 +29,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
           const AdminOverviewTab(),
           const AdminProductsListScreen(isTab: true),
           const AdminOrdersScreen(isTab: true),
-          const AdminUsersTab(),
+          const AdminUsersScreen(),
           const ProfileScreen(),
         ];
       case 'rider':

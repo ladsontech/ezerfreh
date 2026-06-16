@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/data/services/order_service.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
@@ -9,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 
 class RiderDashboardScreen extends ConsumerStatefulWidget {
   const RiderDashboardScreen({super.key});
@@ -32,10 +35,12 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(riderOrdersProvider);
+    final productsAsync = ref.watch(allProductsProvider);
     final riderId = ref.watch(authServiceProvider).currentUser?.uid;
 
     return ordersAsync.when(
-      data: (orders) {
+      data: (allOrders) {
+        final orders = allOrders.where((order) => !order.orderStatus.isTerminal).toList();
         final filtered = _filterOrders(orders);
         final ready = orders
             .where((order) => order.orderStatus == OrderStatus.readyForPickup)
@@ -53,8 +58,14 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
             .length;
         final active = orders.where((order) => order.orderStatus.isActive).length;
 
+        final products = productsAsync.asData?.value ?? [];
+        final imageMap = {for (final p in products) p.id: p.imageUrl};
+
         return RefreshIndicator(
-          onRefresh: () async => ref.invalidate(riderOrdersProvider),
+          onRefresh: () async {
+            ref.invalidate(riderOrdersProvider);
+            ref.invalidate(allProductsProvider);
+          },
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
             children: [
@@ -113,6 +124,7 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
                             .map((order) => _RiderOrderCard(
                                   order: order,
                                   riderId: riderId,
+                                  imageMap: imageMap,
                                 ))
                             .toList(),
                       );
@@ -128,6 +140,7 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
                               child: _RiderOrderCard(
                                 order: order,
                                 riderId: riderId,
+                                imageMap: imageMap,
                               ),
                             ),
                           )
@@ -269,8 +282,13 @@ class _RiderStat extends StatelessWidget {
 class _RiderOrderCard extends ConsumerStatefulWidget {
   final OrderModel order;
   final String? riderId;
+  final Map<String, String> imageMap;
 
-  const _RiderOrderCard({required this.order, required this.riderId});
+  const _RiderOrderCard({
+    required this.order,
+    required this.riderId,
+    required this.imageMap,
+  });
 
   @override
   ConsumerState<_RiderOrderCard> createState() => _RiderOrderCardState();
@@ -279,14 +297,6 @@ class _RiderOrderCard extends ConsumerStatefulWidget {
 class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
   bool _updating = false;
   bool _navigating = false;
-
-  static const _riderStatuses = [
-    OrderStatus.assigned,
-    OrderStatus.pickedUp,
-    OrderStatus.onTheWay,
-    OrderStatus.arrived,
-    OrderStatus.completed,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -327,6 +337,60 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
           ),
           const SizedBox(height: 8),
           OrderDeliveryTimeline(status: status, compact: true),
+          
+          // Order Items with Images
+          if (order.items.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 48,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: order.items.length,
+                itemBuilder: (context, index) {
+                  final item = order.items[index];
+                  final imageUrl = widget.imageMap[item.productId] ?? '';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE8ECE8)),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _buildItemImage(imageUrl),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.65),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(4),
+                                bottomRight: Radius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'x${item.quantity}',
+                              style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+
           const SizedBox(height: 8),
           Text(
             order.items.map((item) => '${item.quantity}x ${item.name}').join(', '),
@@ -361,46 +425,6 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
                   ),
                 ),
             ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Set delivery status',
-            style: GoogleFonts.lato(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: _riderStatuses.map((targetStatus) {
-              final selected = status == targetStatus;
-              return ChoiceChip(
-                selected: selected,
-                showCheckmark: false,
-                avatar: Icon(
-                  targetStatus.icon,
-                  size: 14,
-                  color: selected ? Colors.white : targetStatus.color,
-                ),
-                label: Text(targetStatus.label),
-                labelStyle: GoogleFonts.lato(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: selected ? Colors.white : Colors.black87,
-                ),
-                selectedColor: targetStatus.color,
-                backgroundColor: targetStatus.color.withValues(alpha: 0.08),
-                side: BorderSide(
-                  color: targetStatus.color.withValues(alpha: 0.18),
-                ),
-                onSelected: selected || _updating
-                    ? null
-                    : (_) => _setDeliveryStatus(targetStatus),
-              );
-            }).toList(),
           ),
           const SizedBox(height: 10),
           Row(
@@ -449,6 +473,26 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
     );
   }
 
+  Widget _buildItemImage(String imageUrl) {
+    final url = imageUrl.trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return CachedNetworkImage(
+        imageUrl: url,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(color: Colors.grey[100]),
+        errorWidget: (_, __, ___) => const Icon(Icons.broken_image, size: 16),
+      );
+    }
+    if (url.isNotEmpty) {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported, size: 16),
+      );
+    }
+    return const Icon(Icons.shopping_basket_outlined, size: 16);
+  }
+
   Future<void> _advanceStatus() async {
     final riderId = widget.riderId;
     if (riderId == null) {
@@ -467,43 +511,24 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
             riderId: riderId,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Order ${widget.order.shortId} updated to ${next?.label ?? 'next status'}.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $error')),
-      );
-    } finally {
-      if (mounted) setState(() => _updating = false);
-    }
-  }
 
-  Future<void> _setDeliveryStatus(OrderStatus status) async {
-    final riderId = widget.riderId;
-    if (riderId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to update deliveries.')),
-      );
-      return;
-    }
-
-    setState(() => _updating = true);
-    try {
-      await ref.read(orderServiceProvider).updateStatus(
-            widget.order.id,
-            status,
-            riderId: riderId,
-          );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Order ${widget.order.shortId} updated to ${status.label}.',
+      // If delivery is completed, navigate to history tab
+      if (next == OrderStatus.completed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎉 Order ${widget.order.shortId} delivered successfully!'),
+            backgroundColor: const Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-        ),
-      );
+        );
+        // Navigate to rider history tab
+        context.go('/rider/history');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Order ${widget.order.shortId} updated to ${next?.label ?? 'next status'}.')),
+        );
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
