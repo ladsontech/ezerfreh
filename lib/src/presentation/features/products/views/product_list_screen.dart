@@ -13,17 +13,16 @@ class ProductListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (category == null) {
-      return const Scaffold(body: Center(child: Text('Invalid Category')));
-    }
-    final productsAsyncValue = ref.watch(productsProvider(category!.id));
+    final productsAsyncValue = category == null
+        ? ref.watch(allProductsProvider)
+        : ref.watch(productsProvider(category!.id));
     final searchQuery = ref.watch(searchQueryProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAF8),
       appBar: AppBar(
         title: Text(
-          category!.name,
+          category?.name ?? 'All Products',
           style: GoogleFonts.lato(fontWeight: FontWeight.w800),
         ),
         backgroundColor: const Color(0xFFF8FAF8),
@@ -53,7 +52,9 @@ class ProductListScreen extends ConsumerWidget {
                     onChanged: (value) =>
                         ref.read(searchQueryProvider.notifier).query = value,
                     decoration: InputDecoration(
-                      hintText: 'Search for ${category!.name.toLowerCase()}...',
+                      hintText: category == null
+                          ? 'Search for products...'
+                          : 'Search for ${category!.name.toLowerCase()}...',
                       hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,

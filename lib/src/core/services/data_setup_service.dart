@@ -208,6 +208,12 @@ class DataSetupService {
     final firestore = FirebaseFirestore.instance;
     final collection = firestore.collection('products');
     
+    // Fetch all existing products for this category to check their current imageUrl
+    final existingSnapshot = await collection.where('categoryId', isEqualTo: catId).get();
+    final Map<String, String> existingImages = {
+      for (var doc in existingSnapshot.docs) doc.id: doc.data()['imageUrl'] as String? ?? ''
+    };
+
     // Use a multi-batch approach to handle large datasets
     WriteBatch batch = firestore.batch();
     int batchCount = 0;
@@ -218,13 +224,18 @@ class DataSetupService {
       final slug = name.toLowerCase().trim().replaceAll(RegExp(r'[^a-z0-9]'), '-');
       final docId = '$slug-$catId';
       
+      final existingUrl = existingImages[docId] ?? '';
+      final finalImageUrl = (existingUrl.startsWith('http://') || existingUrl.startsWith('https://'))
+          ? existingUrl
+          : placeholder;
+      
       final docRef = collection.doc(docId);
       batch.set(docRef, {
         'name': name,
         'price': item['price'],
         'unit': item['unit'] ?? '/ unit',
         'categoryId': catId,
-        'imageUrl': placeholder,
+        'imageUrl': finalImageUrl,
         'description': 'Premium $name sourced for Ezer Fresh.',
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));

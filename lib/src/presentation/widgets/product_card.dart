@@ -33,7 +33,7 @@ class ProductCard extends ConsumerWidget {
           children: [
             // Responsive Landscape Image Section
             AspectRatio(
-              aspectRatio: 1.3,
+              aspectRatio: 1.45,
               child: Container(
                 padding: const EdgeInsets.all(10),
                 width: double.infinity,
@@ -52,7 +52,7 @@ class ProductCard extends ConsumerWidget {
                   Text(
                     'Fresh ${product.categoryName ?? "Produce"}',
                     style: GoogleFonts.lato(
-                      fontSize: 11,
+                      fontSize: 10,
                       color: Colors.grey[500],
                       fontWeight: FontWeight.w600,
                     ),
@@ -63,36 +63,45 @@ class ProductCard extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lato(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'UGX ${product.price.toStringAsFixed(0)}',
-                            style: GoogleFonts.lato(
-                              fontSize: 16,
-                              color: const Color(0xFF2E7D32),
-                              fontWeight: FontWeight.w900,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'UGX ${product.price.toStringAsFixed(0)}',
+                                style: GoogleFonts.lato(
+                                  fontSize: 14,
+                                  color: const Color(0xFF2E7D32),
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            product.unit,
-                            style: GoogleFonts.lato(
-                              fontSize: 11,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                            Text(
+                              product.unit,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.lato(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 4),
                       // Add to Cart Button
                       GestureDetector(
                         onTap: () {
@@ -109,20 +118,20 @@ class ProductCard extends ConsumerWidget {
                           );
                         },
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
                             color: const Color(0xFF4CAF50),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
                           child: const Icon(Icons.add,
-                              color: Colors.white, size: 20),
+                              color: Colors.white, size: 18),
                         ),
                       ),
                     ],

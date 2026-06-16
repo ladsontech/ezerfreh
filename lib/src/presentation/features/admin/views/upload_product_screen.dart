@@ -265,17 +265,25 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
         child: Image.memory(_previewBytes!, fit: BoxFit.cover),
       );
     } else if (_existingImageUrl != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: CachedNetworkImage(
-          imageUrl: _existingImageUrl!,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => const Center(
-            child: CircularProgressIndicator(),
+      final url = _existingImageUrl!.trim();
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            errorWidget: (context, url, error) => const Icon(Icons.error),
           ),
-          errorWidget: (context, url, error) => const Icon(Icons.error),
-        ),
-      );
+        );
+      } else if (url.isNotEmpty) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.asset(url, fit: BoxFit.cover),
+        );
+      }
     }
 
     return const Column(

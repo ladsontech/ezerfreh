@@ -98,18 +98,27 @@ class CartScreen extends ConsumerWidget {
       ref.read(cartProvider.notifier).clear();
 
       if (context.mounted) {
-        Navigator.pop(context); // Pop loading
-        _showSuccessDialog(context);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            Navigator.of(context, rootNavigator: true).pop(); // Pop loading
+            _showSuccessDialog(context);
+          }
+        });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('ERROR PLACING ORDER: $e\n$stackTrace');
       if (context.mounted) {
-        Navigator.pop(context); // Pop loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to place order: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            Navigator.of(context, rootNavigator: true).pop(); // Pop loading
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to place order: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        });
       }
     }
   }

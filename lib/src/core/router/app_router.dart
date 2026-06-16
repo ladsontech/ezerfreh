@@ -246,6 +246,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/all-products',
+        builder: (context, state) => const ProductListScreen(category: null),
+      ),
+      GoRoute(
         path: '/product-detail',
         builder: (context, state) => ProductDetailScreen(product: state.extra as Product),
       ),
