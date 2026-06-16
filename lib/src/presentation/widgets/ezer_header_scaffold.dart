@@ -23,7 +23,7 @@ class EzerHeaderScaffold extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAF8),
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
+        preferredSize: const Size.fromHeight(90),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAF8),
@@ -38,10 +38,13 @@ class EzerHeaderScaffold extends ConsumerWidget {
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lato(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
@@ -50,6 +53,8 @@ class EzerHeaderScaffold extends ConsumerWidget {
                         ),
                         Text(
                           subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lato(
                             color: Colors.grey[500],
                             fontSize: 12,

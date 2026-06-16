@@ -61,7 +61,7 @@ class AdminOverviewTab extends ConsumerWidget {
                 crossAxisCount: columns,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: columns == 1 ? 3.6 : 2.2,
+                childAspectRatio: columns == 1 ? 3.6 : 2.0,
                 children: [
                   _MetricCard(
                     label: 'Revenue',
@@ -245,7 +245,7 @@ class AdminUsersTab extends ConsumerWidget {
                   crossAxisCount: columns,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: columns == 4 ? 2.5 : 1.8,
+                  childAspectRatio: columns == 4 ? 2.5 : 2.0,
                   children: [
                     _MetricCard(
                       label: 'Total',
@@ -386,23 +386,24 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: _panelDecoration(),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color),
+            child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -410,15 +411,19 @@ class _MetricCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.lato(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lato(color: Colors.grey[600]),
+                  style: GoogleFonts.lato(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ],
             ),
