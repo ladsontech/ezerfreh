@@ -2,6 +2,9 @@ import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/core/providers/user_provider.dart';
 import 'package:ezer_fresh/src/core/services/data_setup_service.dart';
+import 'package:ezer_fresh/src/domain/models/order_model.dart';
+import 'package:ezer_fresh/src/domain/models/order_status.dart';
+import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,17 +25,12 @@ class AdminOverviewTab extends ConsumerWidget {
     final products = productsAsync.asData?.value ?? [];
     final orders = ordersAsync.asData?.value ?? [];
     final users = usersAsync.asData?.value ?? [];
-    final activeOrders = orders
-        .where(
-          (order) =>
-              !['completed', 'cancelled'].contains(order.status.toLowerCase()),
-        )
-        .length;
+    final activeOrders = orders.where((order) => order.orderStatus.isActive).length;
     final completedOrders = orders
-        .where((order) => order.status.toLowerCase() == 'completed')
+        .where((order) => order.orderStatus == OrderStatus.completed)
         .length;
     final revenue = orders
-        .where((order) => order.status.toLowerCase() != 'cancelled')
+        .where((order) => order.orderStatus != OrderStatus.cancelled)
         .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
     return SingleChildScrollView(
@@ -606,32 +604,16 @@ class _PillButton extends StatelessWidget {
 // ─── Recent Order Card ──────────────────────────────────────────────────────
 
 class _RecentOrderCard extends StatelessWidget {
-  final dynamic order;
+  final OrderModel order;
 
   const _RecentOrderCard({required this.order});
 
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return const Color(0xFF00B894);
-      case 'cancelled':
-        return const Color(0xFFFF6B6B);
-      case 'processing':
-        return const Color(0xFFFDAA5E);
-      case 'out for delivery':
-        return const Color(0xFF0984E3);
-      case 'ready for pickup':
-        return const Color(0xFF4CAF50);
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(order.status);
+    final status = order.orderStatus;
+    final statusColor = status.color;
     final totalItems =
-        order.items.fold<int>(0, (int sum, item) => sum + (item.quantity as int));
+        order.items.fold<int>(0, (int sum, item) => sum + item.quantity);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -656,8 +638,7 @@ class _RecentOrderCard extends StatelessWidget {
               color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child:
-                Icon(Icons.receipt_long_outlined, color: statusColor, size: 20),
+            child: Icon(status.icon, color: statusColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -692,22 +673,7 @@ class _RecentOrderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  order.status,
-                  style: GoogleFonts.lato(
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              OrderStatusBadge(status: status, compact: true),
             ],
           ),
         ],

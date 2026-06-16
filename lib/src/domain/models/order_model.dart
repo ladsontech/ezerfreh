@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ezer_fresh/src/domain/models/order_status.dart';
 
 class OrderItem {
   final String productId;
@@ -43,6 +44,8 @@ class OrderModel {
   final String? apartmentSuite;
   final double? latitude;
   final double? longitude;
+  final String? riderId;
+  final DateTime? updatedAt;
 
   OrderModel({
     required this.id,
@@ -55,7 +58,29 @@ class OrderModel {
     this.apartmentSuite,
     this.latitude,
     this.longitude,
+    this.riderId,
+    this.updatedAt,
   });
+
+  OrderStatus get orderStatus => OrderStatus.fromString(status);
+
+  int get totalItems =>
+      items.fold<int>(0, (total, item) => total + item.quantity);
+
+  String get shortId {
+    if (id.length <= 8) return '#${id.toUpperCase()}';
+    return '#${id.substring(0, 8).toUpperCase()}';
+  }
+
+  String? get fullAddress {
+    if (address == null) return null;
+    if (apartmentSuite != null && apartmentSuite!.isNotEmpty) {
+      return '$address ($apartmentSuite)';
+    }
+    return address;
+  }
+
+  bool get hasLocation => latitude != null && longitude != null;
 
   factory OrderModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -73,6 +98,8 @@ class OrderModel {
       apartmentSuite: data['apartmentSuite'],
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
+      riderId: data['riderId'],
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
     );
   }
 }

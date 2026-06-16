@@ -1,125 +1,162 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+import 'package:ezer_fresh/src/core/providers/providers.dart';
+import 'package:ezer_fresh/src/data/services/order_service.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
+import 'package:ezer_fresh/src/domain/models/order_status.dart';
+import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// The main Rider deliveries tab — shows stats + delivery queue.
-class RiderDashboardScreen extends ConsumerWidget {
+class RiderDashboardScreen extends ConsumerStatefulWidget {
   const RiderDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ordersAsync = ref.watch(activeDeliveryOrdersProvider);
+  ConsumerState<RiderDashboardScreen> createState() =>
+      _RiderDashboardScreenState();
+}
+
+class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
+  String _filter = 'Active';
+
+  static const _filters = ['All', 'Active', 'Assigned', 'On the Way', 'Done'];
+
+  @override
+  Widget build(BuildContext context) {
+    final ordersAsync = ref.watch(riderOrdersProvider);
+    final user = ref.watch(authServiceProvider).currentUser;
 
     return ordersAsync.when(
       data: (orders) {
-        final outForDelivery = orders
-            .where((o) => o.status.toLowerCase() == 'out for delivery')
+        final filtered = _filterOrders(orders);
+        final active = orders.where((o) => o.orderStatus.isActive).length;
+        final assigned = orders
+            .where((o) => o.orderStatus == OrderStatus.assigned)
             .length;
-        final ready = orders
-            .where((o) => o.status.toLowerCase() == 'ready for pickup')
-            .length;
-        final processing = orders
-            .where((o) => o.status.toLowerCase() == 'processing')
+        final onTheWay = orders
+            .where(
+              (o) =>
+                  o.orderStatus == OrderStatus.onTheWay ||
+                  o.orderStatus == OrderStatus.arrived,
+            )
             .length;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          children: [
-            // ── Status Banner ──
-            _RiderStatusBanner(
-              activeJobs: orders.length,
-              outForDelivery: outForDelivery,
-            ),
-            const SizedBox(height: 20),
-
-            // ── Stat Cards ──
-            _StatsRow(
-              ready: ready,
-              onRoute: outForDelivery,
-              processing: processing,
-              totalJobs: orders.length,
-            ),
-            const SizedBox(height: 28),
-
-            // ── Delivery Queue ──
-            Row(
-              children: [
-                Text(
-                  'Delivery Queue',
-                  style: GoogleFonts.lato(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
+        return RefreshIndicator(
+          color: const Color(0xFF00B894),
+          onRefresh: () async {},
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+            children: [
+              _RiderHeroBanner(
+                activeCount: active,
+                onRouteCount: onTheWay,
+                totalOrders: orders.length,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  _StatTile(
+                    label: 'Active',
+                    value: '$active',
+                    icon: Icons.local_shipping_outlined,
+                    color: const Color(0xFF00B894),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00B894).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(width: 10),
+                  _StatTile(
+                    label: 'Assigned',
+                    value: '$assigned',
+                    icon: Icons.assignment_ind_outlined,
+                    color: const Color(0xFF6C5CE7),
                   ),
-                  child: Text(
-                    '${orders.length}',
+                  const SizedBox(width: 10),
+                  _StatTile(
+                    label: 'On Route',
+                    value: '$onTheWay',
+                    icon: Icons.navigation_outlined,
+                    color: const Color(0xFF0984E3),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Text(
+                    'Orders',
                     style: GoogleFonts.lato(
-                      color: const Color(0xFF00B894),
+                      fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                    ),
+                  ),
+                  const Spacer(),
+                  const LiveIndicator(),
+                ],
+              ),
+              const SizedBox(height: 12),
+              OrderStatusChipBar(
+                selected: _filter,
+                options: _filters,
+                onSelected: (value) => setState(() => _filter = value),
+              ),
+              const SizedBox(height: 16),
+              if (filtered.isEmpty)
+                const _EmptyOrders()
+              else
+                ...filtered.map(
+                  (order) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _RiderOrderCard(
+                      order: order,
+                      riderId: user?.uid,
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            if (orders.isEmpty)
-              const _EmptyDeliveries()
-            else
-              ...orders.map(
-                (order) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _DeliveryCard(order: order),
-                ),
-              ),
-          ],
+            ],
+          ),
         );
       },
       loading: () => const Center(
         child: CircularProgressIndicator(color: Color(0xFF00B894)),
       ),
-      error: (e, s) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-            const SizedBox(height: 12),
-            Text('Error: $e', textAlign: TextAlign.center),
-          ],
-        ),
-      ),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
+  }
+
+  List<OrderModel> _filterOrders(List<OrderModel> orders) {
+    return switch (_filter) {
+      'All' => orders,
+      'Active' => orders.where((o) => o.orderStatus.isActive).toList(),
+      'Assigned' =>
+        orders.where((o) => o.orderStatus == OrderStatus.assigned).toList(),
+      'On the Way' => orders
+          .where(
+            (o) =>
+                o.orderStatus == OrderStatus.onTheWay ||
+                o.orderStatus == OrderStatus.arrived ||
+                o.orderStatus == OrderStatus.pickedUp,
+          )
+          .toList(),
+      'Done' => orders.where((o) => o.orderStatus.isTerminal).toList(),
+      _ => orders,
+    };
   }
 }
 
-// ─── Status Banner ──────────────────────────────────────────────────────────
+class _RiderHeroBanner extends StatelessWidget {
+  final int activeCount;
+  final int onRouteCount;
+  final int totalOrders;
 
-class _RiderStatusBanner extends StatelessWidget {
-  final int activeJobs;
-  final int outForDelivery;
-
-  const _RiderStatusBanner({
-    required this.activeJobs,
-    required this.outForDelivery,
+  const _RiderHeroBanner({
+    required this.activeCount,
+    required this.onRouteCount,
+    required this.totalOrders,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isActive = outForDelivery > 0;
+    final onRoute = onRouteCount > 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -127,15 +164,15 @@ class _RiderStatusBanner extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isActive
-              ? [const Color(0xFF00B894), const Color(0xFF00D2A0)]
-              : [const Color(0xFF636E72), const Color(0xFF74B9FF)],
+          colors: onRoute
+              ? [const Color(0xFF00B894), const Color(0xFF00CEC9)]
+              : [const Color(0xFF2D3436), const Color(0xFF636E72)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (isActive ? const Color(0xFF00B894) : const Color(0xFF636E72))
-                .withValues(alpha: 0.3),
+            color: (onRoute ? const Color(0xFF00B894) : const Color(0xFF2D3436))
+                .withValues(alpha: 0.25),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -151,7 +188,7 @@ class _RiderStatusBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
-              isActive ? Icons.delivery_dining : Icons.pause_circle_outline,
+              onRoute ? Icons.delivery_dining : Icons.two_wheeler,
               color: Colors.white,
               size: 28,
             ),
@@ -162,7 +199,7 @@ class _RiderStatusBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isActive ? 'On Route' : 'Standing By',
+                  onRoute ? 'Deliveries in Progress' : 'Ready for Orders',
                   style: GoogleFonts.lato(
                     color: Colors.white,
                     fontSize: 20,
@@ -171,9 +208,9 @@ class _RiderStatusBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isActive
-                      ? '$outForDelivery ${outForDelivery == 1 ? "delivery" : "deliveries"} in progress'
-                      : '$activeJobs jobs waiting in the queue',
+                  onRoute
+                      ? '$onRouteCount on route • $activeCount active total'
+                      : '$totalOrders orders • $activeCount waiting',
                   style: GoogleFonts.lato(
                     color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 13,
@@ -182,90 +219,19 @@ class _RiderStatusBanner extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$activeJobs',
-              style: GoogleFonts.lato(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-// ─── Stats Row ──────────────────────────────────────────────────────────────
-
-class _StatsRow extends StatelessWidget {
-  final int ready;
-  final int onRoute;
-  final int processing;
-  final int totalJobs;
-
-  const _StatsRow({
-    required this.ready,
-    required this.onRoute,
-    required this.processing,
-    required this.totalJobs,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 600;
-        final crossAxisCount = isWide ? 3 : 3;
-        final ratio = isWide ? 2.2 : 1.1;
-
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: ratio,
-          children: [
-            _MiniStat(
-              label: 'Ready',
-              value: '$ready',
-              icon: Icons.storefront_outlined,
-              color: const Color(0xFF6C5CE7),
-            ),
-            _MiniStat(
-              label: 'On Route',
-              value: '$onRoute',
-              icon: Icons.local_shipping_outlined,
-              color: const Color(0xFF00B894),
-            ),
-            _MiniStat(
-              label: 'Processing',
-              value: '$processing',
-              icon: Icons.schedule_outlined,
-              color: const Color(0xFFFDAA5E),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
+class _StatTile extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
   final Color color;
 
-  const _MiniStat({
+  const _StatTile({
     required this.label,
     required this.value,
     required this.icon,
@@ -274,121 +240,75 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: OrderPanelDecoration.card(borderColor: Colors.grey.shade100),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: GoogleFonts.lato(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: GoogleFonts.lato(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: Colors.black87,
+            Text(
+              label,
+              style: GoogleFonts.lato(fontSize: 11, color: Colors.grey[500]),
             ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.lato(
-              fontSize: 11,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─── Delivery Card ──────────────────────────────────────────────────────────
-
-class _DeliveryCard extends StatelessWidget {
+class _RiderOrderCard extends ConsumerStatefulWidget {
   final OrderModel order;
+  final String? riderId;
 
-  const _DeliveryCard({required this.order});
+  const _RiderOrderCard({required this.order, this.riderId});
 
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'ready for pickup':
-        return const Color(0xFF6C5CE7);
-      case 'out for delivery':
-        return const Color(0xFF00B894);
-      case 'processing':
-        return const Color(0xFFFDAA5E);
-      default:
-        return Colors.grey;
-    }
-  }
+  @override
+  ConsumerState<_RiderOrderCard> createState() => _RiderOrderCardState();
+}
 
-  IconData _statusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'ready for pickup':
-        return Icons.storefront_outlined;
-      case 'out for delivery':
-        return Icons.local_shipping_outlined;
-      case 'processing':
-        return Icons.schedule_outlined;
-      default:
-        return Icons.help_outline;
-    }
-  }
+class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
+  bool _updating = false;
 
   @override
   Widget build(BuildContext context) {
-    final totalItems = order.items.fold<int>(0, (total, item) => total + item.quantity);
-    final statusColor = _statusColor(order.status);
+    final order = widget.order;
+    final status = order.orderStatus;
+    final nextStatus = status.nextRiderStatus;
+    final nextAction = status.nextRiderActionLabel;
+    final canAdvance = nextAction != null && nextStatus != null && !status.isTerminal;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      decoration: OrderPanelDecoration.card(
+        borderColor: status.isActive
+            ? status.color.withValues(alpha: 0.25)
+            : const Color(0xFFE8ECE8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
+                  color: status.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(_statusIcon(order.status), color: statusColor, size: 22),
+                child: Icon(status.icon, color: status.color, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -396,10 +316,10 @@ class _DeliveryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Order #${order.id.substring(0, order.id.length < 8 ? order.id.length : 8).toUpperCase()}',
+                      'Order ${order.shortId}',
                       style: GoogleFonts.lato(
                         fontWeight: FontWeight.w800,
-                        fontSize: 14,
+                        fontSize: 15,
                       ),
                     ),
                     Text(
@@ -412,47 +332,31 @@ class _DeliveryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  order.status,
-                  style: GoogleFonts.lato(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              OrderStatusBadge(status: status),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Items summary
+          const SizedBox(height: 14),
+          OrderDeliveryTimeline(status: status),
+          const SizedBox(height: 14),
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAF8),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.shopping_bag_outlined, size: 16, color: Colors.grey[500]),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    order.items.map((i) => '${i.quantity}x ${i.name}').join(', '),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lato(fontSize: 12, color: Colors.black87),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 Text(
-                  '$totalItems items',
+                  order.items.map((i) => '${i.quantity}x ${i.name}').join(', '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lato(fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${order.totalItems} items • UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
                   style: GoogleFonts.lato(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -462,84 +366,112 @@ class _DeliveryCard extends StatelessWidget {
               ],
             ),
           ),
-
-          if (order.address != null) ...[
+          if (order.fullAddress != null) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[500]),
+                Icon(Icons.location_on_outlined,
+                    size: 16, color: Colors.grey[500]),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    (order.apartmentSuite != null && order.apartmentSuite!.isNotEmpty)
-                        ? '${order.address!} (${order.apartmentSuite!})'
-                        : order.address!,
+                    order.fullAddress!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
+                    style: GoogleFonts.lato(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ),
               ],
             ),
           ],
-
-          const SizedBox(height: 14),
-
-          // Action Buttons
-          Row(
-            children: [
-              if (order.status.toLowerCase() != 'out for delivery')
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Start Delivery',
-                    icon: Icons.local_shipping_outlined,
-                    color: const Color(0xFF00B894),
-                    onTap: () => _setStatus(context, 'Out for Delivery'),
+          if (canAdvance || order.hasLocation) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                if (canAdvance)
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: _updating ? null : _advanceStatus,
+                      icon: _updating
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(nextStatus.icon, size: 18),
+                      label: Text(nextAction),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: nextStatus.color,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              if (order.status.toLowerCase() != 'out for delivery' &&
-                  order.latitude != null)
-                const SizedBox(width: 8),
-              if (order.latitude != null && order.longitude != null)
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Navigate',
-                    icon: Icons.navigation_outlined,
-                    color: const Color(0xFF6C5CE7),
-                    onTap: () => _launchNavigation(order.latitude!, order.longitude!),
+                if (canAdvance && order.hasLocation) const SizedBox(width: 8),
+                if (order.hasLocation)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _launchNavigation(
+                        order.latitude!,
+                        order.longitude!,
+                      ),
+                      icon: const Icon(Icons.navigation_outlined, size: 18),
+                      label: const Text('Navigate'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              if (order.latitude != null) const SizedBox(width: 8),
-              Expanded(
-                child: _ActionButton(
-                  label: 'Complete',
-                  icon: Icons.check_circle_outline,
-                  color: const Color(0xFF2E7D32),
-                  filled: true,
-                  onTap: () => _setStatus(context, 'Completed'),
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Future<void> _setStatus(BuildContext context, String status) async {
-    await FirebaseFirestore.instance.collection('orders').doc(order.id).update({
-      'status': status,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+  Future<void> _advanceStatus() async {
+    if (widget.riderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to update orders')),
+      );
+      return;
+    }
 
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Order moved to $status'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    setState(() => _updating = true);
+    try {
+      await ref.read(orderServiceProvider).advanceRiderStatus(
+            orderId: widget.order.id,
+            current: widget.order.orderStatus,
+            riderId: widget.riderId!,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Updated to ${widget.order.orderStatus.nextRiderStatus?.label ?? 'new status'}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
   }
 
   Future<void> _launchNavigation(double lat, double lng) async {
@@ -555,102 +487,29 @@ class _DeliveryCard extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-  final bool filled;
-
-  const _ActionButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    this.filled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: filled ? color : color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: filled ? Colors.white : color),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lato(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: filled ? Colors.white : color,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Empty State ────────────────────────────────────────────────────────────
-
-class _EmptyDeliveries extends StatelessWidget {
-  const _EmptyDeliveries();
+class _EmptyOrders extends StatelessWidget {
+  const _EmptyOrders();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
+      decoration: OrderPanelDecoration.card(),
       child: Column(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: const Color(0xFF00B894).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.local_shipping_outlined,
-              size: 36,
-              color: Color(0xFF00B894),
-            ),
-          ),
-          const SizedBox(height: 16),
+          Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 12),
           Text(
-            'All Clear!',
+            'No orders in this view',
             style: GoogleFonts.lato(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            'No active deliveries right now.\nNew orders will appear here.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.lato(
-              fontSize: 13,
-              color: Colors.grey[500],
-            ),
+            'Orders update instantly as they come in.',
+            style: GoogleFonts.lato(color: Colors.grey[500], fontSize: 13),
           ),
         ],
       ),

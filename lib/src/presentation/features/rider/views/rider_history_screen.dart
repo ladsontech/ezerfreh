@@ -1,25 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
+import 'package:ezer_fresh/src/domain/models/order_status.dart';
+import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-
-/// Provider for completed/cancelled deliveries — the rider's trip history.
-final riderHistoryProvider = StreamProvider<List<OrderModel>>((ref) {
-  const completedStatuses = ['Completed', 'Cancelled'];
-
-  return FirebaseFirestore.instance
-      .collection('orders')
-      .where('status', whereIn: completedStatuses)
-      .orderBy('createdAt', descending: true)
-      .limit(50)
-      .snapshots()
-      .map(
-        (snapshot) =>
-            snapshot.docs.map((doc) => OrderModel.fromFirestore(doc)).toList(),
-      );
-});
 
 class RiderHistoryScreen extends ConsumerWidget {
   const RiderHistoryScreen({super.key});
@@ -30,10 +16,12 @@ class RiderHistoryScreen extends ConsumerWidget {
 
     return historyAsync.when(
       data: (orders) {
-        final completed =
-            orders.where((o) => o.status.toLowerCase() == 'completed').toList();
-        final cancelled =
-            orders.where((o) => o.status.toLowerCase() == 'cancelled').toList();
+        final completed = orders
+            .where((o) => o.orderStatus == OrderStatus.completed)
+            .toList();
+        final cancelled = orders
+            .where((o) => o.orderStatus == OrderStatus.cancelled)
+            .toList();
         final totalEarned = completed.fold<double>(
           0,
           (total, order) => total + order.totalAmount,
@@ -246,8 +234,8 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = order.status.toLowerCase() == 'completed';
-    final statusColor = isCompleted ? const Color(0xFF00B894) : const Color(0xFFFF6B6B);
+    final status = order.orderStatus;
+    final statusColor = status.color;
     final totalItems = order.items.fold<int>(0, (total, item) => total + item.quantity);
 
     return Container(
@@ -273,11 +261,7 @@ class _HistoryCard extends StatelessWidget {
               color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              isCompleted ? Icons.check_circle_outline : Icons.cancel_outlined,
-              color: statusColor,
-              size: 22,
-            ),
+            child: Icon(status.icon, color: statusColor, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -314,21 +298,7 @@ class _HistoryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  order.status,
-                  style: GoogleFonts.lato(
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              OrderStatusBadge(status: status, compact: true),
             ],
           ),
         ],

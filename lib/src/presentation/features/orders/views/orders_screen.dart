@@ -1,6 +1,8 @@
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
+import 'package:ezer_fresh/src/domain/models/order_status.dart';
+import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -52,12 +54,7 @@ class OrdersScreen extends ConsumerWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final active = orders
-                      .where(
-                        (order) => ![
-                          'completed',
-                          'cancelled',
-                        ].contains(order.status.toLowerCase()),
-                      )
+                      .where((order) => order.orderStatus.isActive)
                       .length;
                   return GridView.count(
                     shrinkWrap: true,
@@ -113,7 +110,7 @@ class OrdersScreen extends ConsumerWidget {
 
   double _totalSpent(List<OrderModel> orders) {
     return orders
-        .where((order) => order.status.toLowerCase() != 'cancelled')
+        .where((order) => order.orderStatus != OrderStatus.cancelled)
         .fold<double>(0, (sum, order) => sum + order.totalAmount);
   }
 }
@@ -171,7 +168,8 @@ class _CustomerOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(order.status);
+    final status = order.orderStatus;
+    final statusColor = status.color;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -193,9 +191,9 @@ class _CustomerOrderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Image.asset(
-                  _getStatusImagePath(order.status),
+                  _getStatusImagePath(status),
                   errorBuilder: (context, _, __) =>
-                      Icon(Icons.receipt, color: statusColor),
+                      Icon(status.icon, color: statusColor),
                 ),
               ),
               const SizedBox(width: 12),
@@ -215,26 +213,11 @@ class _CustomerOrderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withAlpha(26),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  order.status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
+              OrderStatusBadge(status: status),
             ],
           ),
+          const SizedBox(height: 14),
+          OrderDeliveryTimeline(status: status, compact: true),
           const SizedBox(height: 14),
           ...order.items
               .take(3)
@@ -321,36 +304,19 @@ class _EmptyCustomerOrders extends StatelessWidget {
   }
 }
 
-Color _statusColor(String status) {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return Colors.orange;
-    case 'processing':
-      return Colors.blue;
-    case 'ready for pickup':
-      return Colors.deepPurple;
-    case 'out for delivery':
-      return Colors.teal;
-    case 'completed':
-      return Colors.green;
-    case 'cancelled':
-      return Colors.red;
-    default:
-      return Colors.grey;
-  }
-}
-
-String _getStatusImagePath(String status) {
-  switch (status.toLowerCase()) {
-    case 'out for delivery':
+String _getStatusImagePath(OrderStatus status) {
+  switch (status) {
+    case OrderStatus.onTheWay:
+    case OrderStatus.pickedUp:
+    case OrderStatus.arrived:
       return 'assets/status/on_the_way.png';
-    case 'completed':
+    case OrderStatus.completed:
       return 'assets/status/completed.png';
-    case 'cancelled':
+    case OrderStatus.cancelled:
       return 'assets/status/cancelled.png';
-    case 'processing':
-    case 'pending':
+    case OrderStatus.pending:
+    case OrderStatus.processing:
     default:
-      return 'assets/status/completed.png'; // Fallback
+      return 'assets/status/completed.png';
   }
 }
