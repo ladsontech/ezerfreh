@@ -103,7 +103,11 @@ class _AdminProductsListScreenState
             child: TextField(
               onChanged: (value) => setState(() => _query = value),
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: Colors.grey,
+                  size: 18,
+                ),
                 hintText: 'Search products',
                 hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
@@ -125,7 +129,10 @@ class _AdminProductsListScreenState
             child: DropdownButtonFormField<String>(
               initialValue: _category,
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -138,10 +145,16 @@ class _AdminProductsListScreenState
                 fillColor: Colors.white,
               ),
               isDense: true,
-              style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
               dropdownColor: Colors.white,
               items: _categories.entries
-                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                  .map(
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  )
                   .toList(),
               onChanged: (value) => setState(() => _category = value ?? 'All'),
             ),
@@ -149,7 +162,11 @@ class _AdminProductsListScreenState
 
           final count = Text(
             '$filteredCount / $totalCount',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.grey),
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: Colors.grey,
+            ),
           );
           final addButton = FilledButton.icon(
             onPressed: () => context.push('/admin/upload'),
@@ -157,7 +174,9 @@ class _AdminProductsListScreenState
             label: const Text('Add', style: TextStyle(fontSize: 13)),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF2E7D32),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               minimumSize: const Size(0, 36),
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
@@ -261,10 +280,7 @@ class _AdminProductsListScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AspectRatio(
-            aspectRatio: 1.3,
-            child: _ProductImage(product: product),
-          ),
+          AspectRatio(aspectRatio: 1.3, child: _ProductImage(product: product)),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -357,7 +373,9 @@ class _ProductActions extends StatelessWidget {
         Tooltip(
           message: 'Edit product',
           child: IconButton.filledTonal(
-            onPressed: () => context.push('/admin/upload', extra: product),
+            onPressed: () => context.push(
+              '/admin/products/${Uri.encodeComponent(product.id)}/edit',
+            ),
             icon: const Icon(Icons.edit_outlined, size: 18),
           ),
         ),
@@ -419,14 +437,12 @@ class _ProductImage extends StatelessWidget {
         imageUrl: imageUrl,
         fit: BoxFit.cover,
         maxWidthDiskCache: 300,
-        placeholder: (context, url) => const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        placeholder: (context, url) =>
+            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         errorWidget: (context, url, error) => const _ProductImageFallback(),
       );
     }
-    if (imageUrl.isNotEmpty &&
-        !imageUrl.contains('placeholder')) {
+    if (imageUrl.isNotEmpty && !imageUrl.contains('placeholder')) {
       return Image.asset(
         imageUrl,
         fit: BoxFit.cover,

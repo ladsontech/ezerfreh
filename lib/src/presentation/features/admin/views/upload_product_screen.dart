@@ -5,17 +5,23 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class UploadProductScreen extends StatefulWidget {
+class UploadProductScreen extends ConsumerStatefulWidget {
   final Product? productToEdit;
-  const UploadProductScreen({super.key, this.productToEdit});
+  final String? productId;
+
+  const UploadProductScreen({super.key, this.productToEdit, this.productId});
 
   @override
-  State<UploadProductScreen> createState() => _UploadProductScreenState();
+  ConsumerState<UploadProductScreen> createState() =>
+      _UploadProductScreenState();
 }
 
-class _UploadProductScreenState extends State<UploadProductScreen> {
+class _UploadProductScreenState extends ConsumerState<UploadProductScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
@@ -28,22 +34,19 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
 
   final _picker = ImagePicker();
   bool _isLoading = false;
+  bool _syncingForm = false;
   String? _existingImageUrl;
+  String? _editingProductId;
 
   @override
   void initState() {
     super.initState();
     _imageUrlController.addListener(() {
+      if (_syncingForm) return;
       setState(() {});
     });
     if (widget.productToEdit != null) {
-      _nameController.text = widget.productToEdit!.name;
-      _descriptionController.text = widget.productToEdit!.description;
-      _priceController.text = widget.productToEdit!.price.toStringAsFixed(0);
-      _unitController.text = widget.productToEdit!.unit;
-      _selectedCategoryId = widget.productToEdit!.categoryId;
-      _existingImageUrl = widget.productToEdit!.imageUrl;
-      _imageUrlController.text = widget.productToEdit!.imageUrl;
+      _populateForm(widget.productToEdit!);
     }
   }
 
@@ -63,6 +66,23 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     {'id': '3', 'name': 'Herbs'},
     {'id': '4', 'name': 'Spices'},
   ];
+
+  bool get _isEditing => _editingProductId != null || widget.productId != null;
+
+  void _populateForm(Product product) {
+    if (_editingProductId == product.id) return;
+
+    _syncingForm = true;
+    _editingProductId = product.id;
+    _nameController.text = product.name;
+    _descriptionController.text = product.description;
+    _priceController.text = product.price.toStringAsFixed(0);
+    _unitController.text = product.unit;
+    _selectedCategoryId = product.categoryId;
+    _existingImageUrl = product.imageUrl;
+    _imageUrlController.text = product.imageUrl;
+    _syncingForm = false;
+  }
 
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -91,10 +111,20 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
       return;
     }
 
+    final price = double.tryParse(
+      _priceController.text.trim().replaceAll(',', ''),
+    );
+    if (price == null || price <= 0) {
+      _showError('Please enter a valid price.');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      String imageUrl = manualUrl.isNotEmpty ? manualUrl : (_existingImageUrl ?? '');
+      String imageUrl = manualUrl.isNotEmpty
+          ? manualUrl
+          : (_existingImageUrl ?? '');
 
       if (_imageFile != null) {
         final bytes = await _imageFile!.readAsBytes();
@@ -124,20 +154,25 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
         imageUrl = await storageRef.getDownloadURL();
       }
 
+      final selectedCategory = _categories.firstWhere(
+        (category) => category['id'] == _selectedCategoryId,
+        orElse: () => {'id': _selectedCategoryId ?? '1', 'name': 'Produce'},
+      );
       final data = {
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'price': double.parse(_priceController.text),
+        'price': price,
         'unit': _unitController.text.trim(),
         'imageUrl': imageUrl,
         'categoryId': _selectedCategoryId,
+        'categoryName': selectedCategory['name'],
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (widget.productToEdit != null) {
+      if (_editingProductId != null) {
         await FirebaseFirestore.instance
             .collection('products')
-            .doc(widget.productToEdit!.id)
+            .doc(_editingProductId)
             .update(data);
       } else {
         data['createdAt'] = FieldValue.serverTimestamp();
@@ -147,12 +182,14 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              widget.productToEdit != null ? 'Updated!' : 'Published!',
-            ),
+            content: Text(_isEditing ? 'Product updated' : 'Product published'),
           ),
         );
-        Navigator.pop(context);
+        if (Navigator.of(context).canPop()) {
+          Navigator.pop(context);
+        } else {
+          context.go('/admin/products');
+        }
       }
     } catch (e) {
       if (mounted) _showError('Upload failed: $e');
@@ -167,16 +204,97 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final productId = widget.productId;
+    if (widget.productToEdit == null && productId != null) {
+      final productAsync = ref.watch(productByIdProvider(productId));
+      return productAsync.when(
+        data: (product) {
+          if (product == null) {
+            return _buildMessageScaffold(
+              title: 'Product unavailable',
+              message: 'This product could not be found.',
+            );
+          }
+          _populateForm(product);
+          return _buildEditorScaffold();
+        },
+        loading: () => _buildLoadingScaffold(),
+        error: (error, _) => _buildMessageScaffold(
+          title: 'Product unavailable',
+          message: 'Could not load this product: $error',
+        ),
+      );
+    }
+
+    return _buildEditorScaffold();
+  }
+
+  Widget _buildLoadingScaffold() {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F3),
-      appBar: AppBar(
-        title: Text(
-          widget.productToEdit != null ? 'Edit Product' : 'New Product',
+      appBar: _buildAppBar(),
+      body: const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildMessageScaffold({
+    required String title,
+    required String message,
+  }) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7F3),
+      appBar: _buildAppBar(),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.inventory_2_outlined,
+                size: 42,
+                color: Color(0xFF7A7F7A),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: () => context.go('/admin/products'),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Back to Products'),
+              ),
+            ],
+          ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
       ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: Text(_isEditing ? 'Edit Product' : 'New Product'),
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      elevation: 0,
+    );
+  }
+
+  Widget _buildEditorScaffold() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7F3),
+      appBar: _buildAppBar(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Center(
@@ -210,7 +328,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              widget.productToEdit != null
+                              _isEditing
                                   ? 'Edit inventory item'
                                   : 'Create inventory item',
                               style: const TextStyle(
@@ -224,12 +342,12 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                             FilledButton.icon(
                               onPressed: _uploadProduct,
                               icon: Icon(
-                                widget.productToEdit != null
+                                _isEditing
                                     ? Icons.save_outlined
                                     : Icons.publish_outlined,
                               ),
                               label: Text(
-                                widget.productToEdit != null
+                                _isEditing
                                     ? 'Update Product'
                                     : 'Publish Product',
                               ),
@@ -283,7 +401,9 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     }
 
     final urlInput = _imageUrlController.text.trim();
-    final url = urlInput.isNotEmpty ? urlInput : (_existingImageUrl ?? '').trim();
+    final url = urlInput.isNotEmpty
+        ? urlInput
+        : (_existingImageUrl ?? '').trim();
 
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return ClipRRect(
@@ -291,16 +411,19 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
         child: CachedNetworkImage(
           imageUrl: url,
           fit: BoxFit.cover,
-          placeholder: (context, url) => const Center(
-            child: CircularProgressIndicator(),
-          ),
+          placeholder: (context, url) =>
+              const Center(child: CircularProgressIndicator()),
           errorWidget: (context, url, error) => const Icon(Icons.error),
         ),
       );
     } else if (url.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.asset(url, fit: BoxFit.cover),
+        child: Image.asset(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+        ),
       );
     }
 

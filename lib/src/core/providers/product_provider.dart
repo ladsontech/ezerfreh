@@ -15,21 +15,12 @@ final productsProvider = StreamProvider.family<List<Product>, String>((
       .where('categoryId', isEqualTo: categoryId)
       .snapshots()
       .map((snapshot) {
-        return snapshot.docs.map((doc) {
-          final data = doc.data();
-          final unit =
-              data['unit'] ?? _getDefaultUnit(data['categoryId'] ?? categoryId);
-          return Product(
-            id: doc.id,
-            name: data['name'] ?? 'N/A',
-            categoryId: data['categoryId'] ?? categoryId,
-            categoryName: data['categoryName'],
-            imageUrl: data['imageUrl'] ?? '',
-            price: (data['price'] ?? 0.0).toDouble(),
-            unit: unit,
-            description: data['description'] ?? 'No description available.',
-          );
-        }).toList();
+        return snapshot.docs
+            .map(
+              (doc) =>
+                  _productFromDocument(doc, fallbackCategoryId: categoryId)!,
+            )
+            .toList();
       });
 });
 
@@ -41,23 +32,40 @@ final allProductsProvider = StreamProvider<List<Product>>((ref) {
       .orderBy('createdAt', descending: true)
       .snapshots()
       .map((snapshot) {
-        return snapshot.docs.map((doc) {
-          final data = doc.data();
-          final unit =
-              data['unit'] ?? _getDefaultUnit(data['categoryId'] ?? '1');
-          return Product(
-            id: doc.id,
-            name: data['name'] ?? 'N/A',
-            categoryId: data['categoryId'] ?? '1',
-            categoryName: data['categoryName'],
-            imageUrl: data['imageUrl'] ?? '',
-            price: (data['price'] ?? 0.0).toDouble(),
-            unit: unit,
-            description: data['description'] ?? 'No description available.',
-          );
-        }).toList();
+        return snapshot.docs.map((doc) => _productFromDocument(doc)!).toList();
       });
 });
+
+final productByIdProvider = StreamProvider.family<Product?, String>((ref, id) {
+  return FirebaseFirestore.instance
+      .collection('products')
+      .doc(id)
+      .snapshots()
+      .map(_productFromDocument);
+});
+
+Product? _productFromDocument(
+  DocumentSnapshot<Map<String, dynamic>> doc, {
+  String fallbackCategoryId = '1',
+}) {
+  final data = doc.data();
+  if (!doc.exists || data == null) return null;
+
+  final categoryId = data['categoryId'] as String? ?? fallbackCategoryId;
+  final price = data['price'];
+  final unit = data['unit'] as String? ?? _getDefaultUnit(categoryId);
+
+  return Product(
+    id: doc.id,
+    name: data['name'] as String? ?? 'N/A',
+    categoryId: categoryId,
+    categoryName: data['categoryName'] as String?,
+    imageUrl: data['imageUrl'] as String? ?? '',
+    price: price is num ? price.toDouble() : 0,
+    unit: unit,
+    description: data['description'] as String? ?? 'No description available.',
+  );
+}
 
 String _getDefaultUnit(String categoryId) {
   switch (categoryId) {

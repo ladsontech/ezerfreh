@@ -78,10 +78,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             loc != '/create-profile') {
           return '/admin';
         }
-        if (role == 'rider' && !loc.startsWith('/rider') && loc != '/create-profile') {
+        if (role == 'rider' &&
+            !loc.startsWith('/rider') &&
+            loc != '/create-profile') {
           return '/rider';
         }
-        if (role == 'customer' && (loc.startsWith('/admin') || loc.startsWith('/rider'))) {
+        if (role == 'customer' &&
+            (loc.startsWith('/admin') || loc.startsWith('/rider'))) {
           return '/home';
         }
       }
@@ -91,9 +94,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(color: Colors.green),
-          ),
+          body: Center(child: CircularProgressIndicator(color: Colors.green)),
         ),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
@@ -201,22 +202,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
+              ),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
+              GoRoute(
+                path: '/cart',
+                builder: (context, state) => const CartScreen(),
+              ),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/orders', builder: (context, state) => const OrdersScreen()),
+              GoRoute(
+                path: '/orders',
+                builder: (context, state) => const OrdersScreen(),
+              ),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
             ],
           ),
         ],
@@ -224,9 +237,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Standalone Pages
       GoRoute(
+        path: '/admin/products/:productId/edit',
+        builder: (context, state) {
+          final productId = state.pathParameters['productId'];
+          return UploadProductScreen(productId: productId);
+        },
+      ),
+      GoRoute(
         path: '/admin/upload',
         builder: (context, state) {
-          final product = state.extra as Product?;
+          final extra = state.extra;
+          final product = extra is Product ? extra : null;
           return UploadProductScreen(productToEdit: product);
         },
       ),
@@ -251,9 +272,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/product-detail',
-        builder: (context, state) => ProductDetailScreen(product: state.extra as Product),
+        builder: (context, state) =>
+            ProductDetailScreen(product: state.extra as Product),
       ),
     ],
   );
 });
-
