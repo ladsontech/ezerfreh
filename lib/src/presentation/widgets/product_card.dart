@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+yimport 'package:cached_network_image/cached_network_image.dart';
 import 'package:ezer_fresh/src/core/providers/cart_provider.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
 import 'package:flutter/material.dart';

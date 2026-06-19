@@ -1,4 +1,5 @@
 import 'package:ezer_fresh/src/core/providers/providers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,7 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             'email': _emailController.text.trim(),
             'name': _nameController.text.trim(),
             'role': 'customer',
-            'createdAt': DateTime.now().toIso8601String(),
+            'createdAt': FieldValue.serverTimestamp(),
           });
           // Do NOT navigate manually — the router redirect handles it.
         }
@@ -72,7 +73,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (e.code == 'email-already-in-use') {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('This email is already in use by another account.'),
+              content: const Text(
+                'This email is already in use by another account.',
+              ),
               action: SnackBarAction(
                 label: 'Switch to Login',
                 onPressed: () {
@@ -281,7 +284,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: colorScheme.primary.withValues(alpha: 0.7)),
+        prefixIcon: Icon(
+          icon,
+          color: colorScheme.primary.withValues(alpha: 0.7),
+        ),
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
@@ -296,7 +302,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
-        labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
+        labelStyle: TextStyle(
+          color: colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
       ),
     );
   }
