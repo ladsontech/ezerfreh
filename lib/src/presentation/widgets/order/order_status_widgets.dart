@@ -109,12 +109,17 @@ class OrderStatusBadge extends StatelessWidget {
         children: [
           Icon(status.icon, size: compact ? 12 : 14, color: status.color),
           const SizedBox(width: 4),
-          Text(
-            status.label,
-            style: GoogleFonts.lato(
-              color: status.color,
-              fontSize: compact ? 10 : 11,
-              fontWeight: FontWeight.w700,
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: compact ? 108 : 144),
+            child: Text(
+              status.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.lato(
+                color: status.color,
+                fontSize: compact ? 10 : 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -141,7 +146,8 @@ class OrderDeliveryTimeline extends StatelessWidget {
 
     final steps = OrderStatus.deliveryFlow;
     final currentIndex = status.deliveryStepIndex;
-    final isPreDelivery = status.index < OrderStatus.assigned.index &&
+    final isPreDelivery =
+        status.index < OrderStatus.assigned.index &&
         status != OrderStatus.completed;
 
     if (isPreDelivery) {
@@ -149,12 +155,16 @@ class OrderDeliveryTimeline extends StatelessWidget {
         children: [
           Icon(Icons.store_outlined, size: 14, color: status.color),
           const SizedBox(width: 6),
-          Text(
-            'Kitchen: ${status.label}',
-            style: GoogleFonts.lato(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+          Expanded(
+            child: Text(
+              'Kitchen: ${status.label}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.lato(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
             ),
           ),
         ],
@@ -215,7 +225,9 @@ class _TimelineNode extends StatelessWidget {
           width: compact ? 22 : 28,
           height: compact ? 22 : 28,
           decoration: BoxDecoration(
-            color: active ? color.withValues(alpha: 0.15) : Colors.grey.shade100,
+            color: active
+                ? color.withValues(alpha: 0.15)
+                : Colors.grey.shade100,
             shape: BoxShape.circle,
             border: Border.all(
               color: isCurrent ? color : Colors.transparent,

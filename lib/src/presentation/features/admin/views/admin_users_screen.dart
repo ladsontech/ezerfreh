@@ -8,33 +8,61 @@ class AdminUsersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(allUsersProvider);
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Analytics'),
-      ),
+      appBar: AppBar(title: const Text('User Analytics')),
       body: usersAsync.when(
         data: (users) {
-          final admins    = users.where((u) => u.role == 'admin').length;
-          final riders    = users.where((u) => u.role == 'rider').length;
+          final admins = users.where((u) => u.role == 'admin').length;
+          final riders = users.where((u) => u.role == 'rider').length;
           final customers = users.where((u) => u.role == 'customer').length;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
             children: [
-              Row(
-                children: [
-                  _Stat(label: 'Total',     value: '${users.length}', icon: Icons.people_outline,              color: const Color(0xFF0984E3)),
-                  _Stat(label: 'Admins',    value: '$admins',          icon: Icons.admin_panel_settings_outlined, color: const Color(0xFF2E7D32)),
-                  _Stat(label: 'Riders',    value: '$riders',          icon: Icons.delivery_dining_outlined,    color: const Color(0xFF00B894)),
-                  _Stat(label: 'Customers', value: '$customers',       icon: Icons.person_outline,              color: const Color(0xFFFDAA5E)),
-                ],
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _StatsGrid(
+                        children: [
+                          _Stat(
+                            label: 'Total',
+                            value: '${users.length}',
+                            icon: Icons.people_outline,
+                            color: const Color(0xFF0984E3),
+                          ),
+                          _Stat(
+                            label: 'Admins',
+                            value: '$admins',
+                            icon: Icons.admin_panel_settings_outlined,
+                            color: const Color(0xFF2E7D32),
+                          ),
+                          _Stat(
+                            label: 'Riders',
+                            value: '$riders',
+                            icon: Icons.delivery_dining_outlined,
+                            color: const Color(0xFF00B894),
+                          ),
+                          _Stat(
+                            label: 'Customers',
+                            value: '$customers',
+                            icon: Icons.person_outline,
+                            color: const Color(0xFFFDAA5E),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (users.isEmpty)
+                        const _Empty(message: 'No users found')
+                      else
+                        ...users.map((u) => _UserRow(user: u)),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 10),
-              if (users.isEmpty)
-                const _Empty(message: 'No users found')
-              else
-                ...users.map((u) => _UserRow(user: u)),
             ],
           );
         },
@@ -45,7 +73,32 @@ class AdminUsersScreen extends ConsumerWidget {
   }
 }
 
-// Compact stat tile
+class _StatsGrid extends StatelessWidget {
+  final List<Widget> children;
+
+  const _StatsGrid({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 700 ? 4 : 2;
+        const spacing = 8.0;
+        final width =
+            (constraints.maxWidth - (columns - 1) * spacing) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: children
+              .map((child) => SizedBox(width: width, child: child))
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
 class _Stat extends StatelessWidget {
   final String label;
   final String value;
@@ -61,35 +114,33 @@ class _Stat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.all(3),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE8ECE8)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-            ),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-            ),
-          ],
-        ),
+    return Container(
+      constraints: const BoxConstraints(minHeight: 82),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE8ECE8)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          ),
+        ],
       ),
     );
   }
@@ -102,9 +153,9 @@ class _UserRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (user.role) {
-      'admin'  => const Color(0xFF2E7D32),
-      'rider'  => const Color(0xFF00B894),
-      _        => const Color(0xFF0984E3),
+      'admin' => const Color(0xFF2E7D32),
+      'rider' => const Color(0xFF00B894),
+      _ => const Color(0xFF0984E3),
     };
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -125,7 +176,10 @@ class _UserRow extends StatelessWidget {
                   user.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Text(
                   user.email,
@@ -144,7 +198,13 @@ class _UserRow extends StatelessWidget {
             ),
             child: Text(
               user.role.toUpperCase(),
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -162,7 +222,10 @@ class _Empty extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
-        child: Text(message, style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+        child: Text(
+          message,
+          style: TextStyle(color: Colors.grey[400], fontSize: 13),
+        ),
       ),
     );
   }

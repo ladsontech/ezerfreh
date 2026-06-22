@@ -8,21 +8,96 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Helper function to check if the user has one of the requested roles
+    function hasAnyRole(roles) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+    }
+
     // Helper function to check if the user is an admin
     function isAdmin() {
-      return isSignedIn() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
-          'admin',
-          'Admin',
-          'ADMIN'
-        ];
+      return hasAnyRole(['admin', 'Admin', 'ADMIN']);
+    }
+
+    // Helper function to check if the user is a rider
+    function isRider() {
+      return hasAnyRole(['rider', 'Rider', 'RIDER']);
+    }
+
+    function isOrderStaff() {
+      return isAdmin() || isRider();
+    }
+
+    function isValidOrderStatus() {
+      return request.resource.data.status in [
+        'Pending',
+        'Processing',
+        'Ready for Pickup',
+        'Assigned',
+        'Picked Up',
+        'On the Way',
+        'Out for Delivery',
+        'Arrived',
+        'Completed',
+        'Cancelled'
+      ];
+    }
+
+    function isOrderStatusUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'status',
+        'updatedAt',
+        'riderId',
+        'assignedAt'
+      ]) && isValidOrderStatus();
+    }
+
+    function isOrderOwner() {
+      return isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function isNewOrderOwner() {
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    function isOwnCustomerProfileCreate(userId) {
+      return isSignedIn() &&
+        request.auth.uid == userId &&
+        (
+          !request.resource.data.keys().hasAny(['role']) ||
+          request.resource.data.role == 'customer'
+        );
+    }
+
+    function isOwnProfileUpdate(userId) {
+      return isSignedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.role == resource.data.role;
     }
 
     // Users Collection
     match /users/{userId} {
       // Users can read and update only their own profile. Admins can read all profiles.
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isOwnCustomerProfileCreate(userId) || isAdmin();
+      allow update: if isOwnProfileUpdate(userId) || isAdmin();
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      match /fcmTokens/{tokenId} {
+        allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+        allow create, update: if isSignedIn() &&
+          request.auth.uid == userId &&
+          request.resource.data.keys().hasOnly([
+            'token',
+            'platform',
+            'createdAt',
+            'updatedAt'
+          ]) &&
+          request.resource.data.token is string &&
+          request.resource.data.platform is string;
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // Products Collection
@@ -36,8 +111,10 @@ service cloud.firestore {
 
     // Orders Collection
     match /orders/{orderId} {
-      // Any authenticated user can read or write orders
-      allow read, write: if isSignedIn();
+      allow read: if isOrderOwner() || isOrderStaff();
+      allow create: if isNewOrderOwner();
+      allow update: if isOrderStaff() && isOrderStatusUpdate();
+      allow delete: if isAdmin();
     }
   }
 }

@@ -51,55 +51,67 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
   Widget _buildOrders(List<OrderModel> orders) {
     final filtered = _filter == 'All'
         ? orders
-        : orders
-            .where((order) => order.orderStatus.label == _filter)
-            .toList();
+        : orders.where((order) => order.orderStatus.label == _filter).toList();
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(adminOrdersProvider),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         children: [
-          _OrdersSummary(orders: orders),
-          const SizedBox(height: 10),
-          OrderStatusChipBar(
-            selected: _filter,
-            options: _filters,
-            onSelected: (value) => setState(() => _filter = value),
-          ),
-          const SizedBox(height: 10),
-          if (filtered.isEmpty)
-            _EmptyOrders(filter: _filter)
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 900;
-                if (!wide) {
-                  return Column(
-                    children: filtered
-                        .map((order) => _AdminOrderCard(
-                              order: order,
-                              onStatusChanged: _updateStatus,
-                            ))
-                        .toList(),
-                  );
-                }
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _OrdersSummary(orders: orders),
+                  const SizedBox(height: 12),
+                  OrderStatusChipBar(
+                    selected: _filter,
+                    options: _filters,
+                    onSelected: (value) => setState(() => _filter = value),
+                  ),
+                  const SizedBox(height: 12),
+                  if (filtered.isEmpty)
+                    _EmptyOrders(filter: _filter)
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final wide = constraints.maxWidth >= 900;
+                        if (!wide) {
+                          return Column(
+                            children: filtered
+                                .map(
+                                  (order) => _AdminOrderCard(
+                                    order: order,
+                                    onStatusChanged: _updateStatus,
+                                  ),
+                                )
+                                .toList(),
+                          );
+                        }
 
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: filtered
-                      .map((order) => SizedBox(
-                            width: (constraints.maxWidth - 12) / 2,
-                            child: _AdminOrderCard(
-                              order: order,
-                              onStatusChanged: _updateStatus,
-                            ),
-                          ))
-                      .toList(),
-                );
-              },
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: filtered
+                              .map(
+                                (order) => SizedBox(
+                                  width: (constraints.maxWidth - 12) / 2,
+                                  child: _AdminOrderCard(
+                                    order: order,
+                                    onStatusChanged: _updateStatus,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
+          ),
         ],
       ),
     );
@@ -112,13 +124,15 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
       await ref.read(orderServiceProvider).updateStatus(order.id, status);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Order ${order.shortId} updated to ${status.label}.')),
+        SnackBar(
+          content: Text('Order ${order.shortId} updated to ${status.label}.'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update failed: $error')));
     }
   }
 }
@@ -130,9 +144,11 @@ class _OrdersSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active     = orders.where((o) => o.orderStatus.isActive).length;
-    final inDelivery = orders.where((o) => o.orderStatus.isDeliveryPhase).length;
-    final revenue    = orders
+    final active = orders.where((o) => o.orderStatus.isActive).length;
+    final inDelivery = orders
+        .where((o) => o.orderStatus.isDeliveryPhase)
+        .length;
+    final revenue = orders
         .where((o) => o.orderStatus != OrderStatus.cancelled)
         .fold<double>(0, (sum, o) => sum + o.totalAmount);
 
@@ -140,10 +156,22 @@ class _OrdersSummary extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: [
-        _Pill(icon: Icons.receipt_long_outlined, label: 'Total',    value: '${orders.length}'),
-        _Pill(icon: Icons.bolt_outlined,         label: 'Active',   value: '$active'),
-        _Pill(icon: Icons.delivery_dining_outlined, label: 'Delivery', value: '$inDelivery'),
-        _Pill(icon: Icons.payments_outlined,     label: 'Revenue',  value: 'UGX ${NumberFormat.compact().format(revenue)}'),
+        _Pill(
+          icon: Icons.receipt_long_outlined,
+          label: 'Total',
+          value: '${orders.length}',
+        ),
+        _Pill(icon: Icons.bolt_outlined, label: 'Active', value: '$active'),
+        _Pill(
+          icon: Icons.delivery_dining_outlined,
+          label: 'Delivery',
+          value: '$inDelivery',
+        ),
+        _Pill(
+          icon: Icons.payments_outlined,
+          label: 'Revenue',
+          value: 'UGX ${NumberFormat.compact().format(revenue)}',
+        ),
       ],
     );
   }
@@ -157,21 +185,37 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: const Color(0xFF2E7D32)),
-          const SizedBox(width: 5),
-          Text('$label: ', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          Text(value,      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-        ],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 210),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE0E0E0)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFF2E7D32)),
+            const SizedBox(width: 6),
+            Text(
+              '$label: ',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -181,10 +225,7 @@ class _AdminOrderCard extends StatefulWidget {
   final OrderModel order;
   final void Function(OrderModel order, OrderStatus status) onStatusChanged;
 
-  const _AdminOrderCard({
-    required this.order,
-    required this.onStatusChanged,
-  });
+  const _AdminOrderCard({required this.order, required this.onStatusChanged});
 
   @override
   State<_AdminOrderCard> createState() => _AdminOrderCardState();
@@ -201,7 +242,9 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: _cardDecoration(borderColor: status.color.withValues(alpha: 0.22)),
+      decoration: _cardDecoration(
+        borderColor: status.color.withValues(alpha: 0.22),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -227,8 +270,14 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
                     ],
                   ),
                 ),
-                OrderStatusBadge(status: status, compact: true),
-                Icon(_expanded ? Icons.expand_less : Icons.expand_more),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: OrderStatusBadge(status: status, compact: true),
+                ),
+                Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -237,6 +286,8 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
           const SizedBox(height: 12),
           Text(
             '${order.totalItems} items, UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           if (order.fullAddress != null) ...[
@@ -245,7 +296,13 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
               children: [
                 const Icon(Icons.location_on_outlined, size: 16),
                 const SizedBox(width: 6),
-                Expanded(child: Text(order.fullAddress!)),
+                Expanded(
+                  child: Text(
+                    order.fullAddress!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           ],
@@ -256,8 +313,22 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
-                    Expanded(child: Text('${item.quantity}x ${item.name}')),
-                    Text('UGX ${NumberFormat('#,##0').format(item.price * item.quantity)}'),
+                    Expanded(
+                      child: Text(
+                        '${item.quantity}x ${item.name}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        'UGX ${NumberFormat('#,##0').format(item.price * item.quantity)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -272,10 +343,8 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
               ),
               items: OrderStatus.adminFlow
                   .map(
-                    (item) => DropdownMenuItem(
-                      value: item,
-                      child: Text(item.label),
-                    ),
+                    (item) =>
+                        DropdownMenuItem(value: item, child: Text(item.label)),
                   )
                   .toList(),
               onChanged: (value) {

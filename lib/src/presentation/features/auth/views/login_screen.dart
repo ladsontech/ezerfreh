@@ -107,6 +107,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    final authService = ref.read(authServiceProvider);
+    final firestoreService = ref.read(firestoreServiceProvider);
+
+    try {
+      final credential = await authService.signInWithGoogle();
+      if (credential != null && credential.user != null) {
+        final user = credential.user!;
+        final userDoc = await firestoreService.getUserProfileDoc(user.uid);
+        if (!userDoc.exists) {
+          await firestoreService.setUserProfile(user.uid, {
+            'uid': user.uid,
+            'email': user.email ?? '',
+            'name': user.displayName ?? 'Google User',
+            'role': 'customer',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Google authentication failed')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An unexpected error occurred: ${e.toString()}'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -226,6 +265,85 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Text(
+                                  'OR',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.4,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 56,
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: _isLoading ? null : _signInWithGoogle,
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.network(
+                                    'https://developers.google.com/static/identity/images/g-logo.png',
+                                    height: 22,
+                                    width: 22,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.g_mobiledata_outlined,
+                                              size: 22,
+                                            ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _isLogin
+                                        ? 'Sign in with Google'
+                                        : 'Sign up with Google',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],

@@ -46,13 +46,14 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     _buildPromoBanner(),
                     const SizedBox(height: 24),
-                    _buildSectionHeader(
-                        'Categories', () => context.push('/all-categories')),
+                    _buildSectionHeader('Categories'),
                     const SizedBox(height: 16),
                     _buildCategoryList(context, categories),
                     const SizedBox(height: 24),
                     _buildSectionHeader(
-                        'Flash Sales', () => context.push('/all-products')),
+                      'Flash Sales',
+                      () => context.push('/all-products'),
+                    ),
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -64,7 +65,9 @@ class HomeScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: _buildSectionHeader(
-                    'All Products', () => context.push('/all-products')),
+                  'All Products',
+                  () => context.push('/all-products'),
+                ),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -81,15 +84,20 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildSearchResults(
-      BuildContext context, WidgetRef ref, String query) {
+    BuildContext context,
+    WidgetRef ref,
+    String query,
+  ) {
     final productsAsync = ref.watch(allProductsProvider);
 
     return productsAsync.when(
       data: (products) {
         final filtered = products
-            .where((p) =>
-                p.name.toLowerCase().contains(query.toLowerCase()) ||
-                p.description.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (p) =>
+                  p.name.toLowerCase().contains(query.toLowerCase()) ||
+                  p.description.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
 
         if (filtered.isEmpty) {
@@ -102,8 +110,10 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Text(
                     'No matches for "$query"',
-                    style:
-                        GoogleFonts.lato(color: Colors.grey[600], fontSize: 16),
+                    style: GoogleFonts.lato(
+                      color: Colors.grey[600],
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -130,9 +140,8 @@ class HomeScreen extends ConsumerWidget {
       loading: () => const SliverFillRemaining(
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, __) => SliverFillRemaining(
-        child: Center(child: Text('Error: $e')),
-      ),
+      error: (e, __) =>
+          SliverFillRemaining(child: Center(child: Text('Error: $e'))),
     );
   }
 
@@ -167,8 +176,11 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       Row(
                         children: [
-                          const Icon(Icons.location_on,
-                              color: Color(0xFF2E7D32), size: 16),
+                          const Icon(
+                            Icons.location_on,
+                            color: Color(0xFF2E7D32),
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Consumer(
@@ -179,15 +191,21 @@ class HomeScreen extends ConsumerWidget {
                                     if (user == null) {
                                       return const Text('Select Location');
                                     }
-                                    final profileAsync = ref
-                                        .watch(userProfileProvider(user.uid));
+                                    final profileAsync = ref.watch(
+                                      userProfileProvider(user.uid),
+                                    );
                                     return profileAsync.when(
                                       data: (doc) {
                                         final data =
                                             doc.data() as Map<String, dynamic>?;
-                                        final address = data?['address'] as String?;
-                                        final suite = data?['apartmentSuite'] as String?;
-                                        final displayAddress = (address != null && suite != null && suite.isNotEmpty)
+                                        final address =
+                                            data?['address'] as String?;
+                                        final suite =
+                                            data?['apartmentSuite'] as String?;
+                                        final displayAddress =
+                                            (address != null &&
+                                                suite != null &&
+                                                suite.isNotEmpty)
                                             ? '$address ($suite)'
                                             : (address ?? 'Select Location');
                                         return Text(
@@ -202,25 +220,32 @@ class HomeScreen extends ConsumerWidget {
                                         );
                                       },
                                       loading: () => const SizedBox(
-                                          height: 15,
-                                          width: 15,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2)),
+                                        height: 15,
+                                        width: 15,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
                                       error: (_, __) => const Text('Error'),
                                     );
                                   },
                                   loading: () => const SizedBox(
-                                      height: 15,
-                                      width: 15,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2)),
+                                    height: 15,
+                                    width: 15,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
                                   error: (_, __) => const Text('Error'),
                                 );
                               },
                             ),
                           ),
-                          const Icon(Icons.keyboard_arrow_down,
-                              color: Colors.grey, size: 20),
+                          const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
                         ],
                       ),
                     ],
@@ -241,8 +266,11 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.notifications_none,
-                    color: Colors.black87, size: 22),
+                child: const Icon(
+                  Icons.notifications_none,
+                  color: Colors.black87,
+                  size: 22,
+                ),
               ),
             ],
           ),
@@ -299,7 +327,7 @@ class HomeScreen extends ConsumerWidget {
     return const _BannerCarousel();
   }
 
-  Widget _buildSectionHeader(String title, VoidCallback onSeeAll) {
+  Widget _buildSectionHeader(String title, [VoidCallback? onSeeAll]) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -311,17 +339,18 @@ class HomeScreen extends ConsumerWidget {
             color: Colors.black87,
           ),
         ),
-        TextButton(
-          onPressed: onSeeAll,
-          child: Text(
-            'See All',
-            style: GoogleFonts.lato(
-              fontSize: 13,
-              color: const Color(0xFF2E7D32),
-              fontWeight: FontWeight.bold,
+        if (onSeeAll != null)
+          TextButton(
+            onPressed: onSeeAll,
+            child: Text(
+              'See All',
+              style: GoogleFonts.lato(
+                fontSize: 13,
+                color: const Color(0xFF2E7D32),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -352,9 +381,10 @@ class HomeScreen extends ConsumerWidget {
                     child: Image.asset(
                       category.imageUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.category_outlined,
-                              color: Color(0xFF2E7D32)),
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.category_outlined,
+                        color: Color(0xFF2E7D32),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -378,7 +408,10 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildFeaturedProductsGrid(
-      BuildContext context, WidgetRef ref, String categoryId) {
+    BuildContext context,
+    WidgetRef ref,
+    String categoryId,
+  ) {
     final productsAsyncValue = ref.watch(productsProvider(categoryId));
 
     return productsAsyncValue.when(
@@ -403,7 +436,8 @@ class HomeScreen extends ConsumerWidget {
         );
       },
       loading: () => const SliverToBoxAdapter(
-          child: Center(child: CircularProgressIndicator())),
+        child: Center(child: CircularProgressIndicator()),
+      ),
       error: (e, s) => const SliverToBoxAdapter(child: SizedBox()),
     );
   }
@@ -505,4 +539,3 @@ class _BannerCarouselState extends State<_BannerCarousel> {
     );
   }
 }
-
