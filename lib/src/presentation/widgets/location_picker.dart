@@ -129,6 +129,22 @@ class _LocationPickerState extends State<LocationPicker> {
                 myLocationButtonEnabled: true,
               ),
               Positioned(
+                top: 20,
+                right: 20,
+                child: FloatingActionButton.extended(
+                  heroTag: 'gps_button',
+                  onPressed: _getCurrentUserLocation,
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF2E7D32),
+                  elevation: 4,
+                  icon: const Icon(Icons.my_location, size: 18),
+                  label: Text(
+                    'Current Location',
+                    style: GoogleFonts.lato(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              Positioned(
                 bottom: 20,
                 left: 20,
                 right: 20,

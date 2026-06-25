@@ -203,14 +203,16 @@ class _CustomerOrderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Order ${order.shortId}',
+                      order.items.map((i) => i.name).take(2).join(', '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lato(
                         fontWeight: FontWeight.w900,
                         fontSize: 14,
                       ),
                     ),
                     Text(
-                      DateFormat.yMMMd().add_jm().format(order.createdAt),
+                      '${order.shortId} · ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
                       style: GoogleFonts.lato(
                         color: Colors.grey[600],
                         fontSize: 11,
@@ -333,100 +335,217 @@ class _CustomerOrderCard extends StatelessWidget {
   }
 }
 
-class _CustomerHistoryCard extends StatelessWidget {
+class _CustomerHistoryCard extends StatefulWidget {
   final OrderModel order;
   final Map<String, String> imageMap;
 
   const _CustomerHistoryCard({required this.order, required this.imageMap});
 
   @override
+  State<_CustomerHistoryCard> createState() => _CustomerHistoryCardState();
+}
+
+class _CustomerHistoryCardState extends State<_CustomerHistoryCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final order = widget.order;
+    final imageMap = widget.imageMap;
     final status = order.orderStatus;
     final isCompleted = status == OrderStatus.completed;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFE8ECE8)),
       ),
-      child: Row(
-        children: [
-          // Product image thumbnails stacked
-          SizedBox(
-            width: 44,
-            height: 44,
-            child: order.items.isNotEmpty
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: _buildItemImage(
-                        imageMap[order.items.first.productId] ?? ''),
-                  )
-                : Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F8F1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.shopping_basket_outlined,
-                        size: 20, color: Color(0xFFA5D6A7)),
+      child: InkWell(
+        onTap: () => setState(() => _expanded = !_expanded),
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  // Product image thumbnail
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: order.items.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _buildItemImage(
+                                imageMap[order.items.first.productId] ?? ''),
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F8F1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.shopping_basket_outlined,
+                                size: 20, color: Color(0xFFA5D6A7)),
+                          ),
                   ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.items.map((i) => i.name).take(2).join(', '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.lato(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          '${order.shortId} · ${order.totalItems} items · ${DateFormat.yMMMd().format(order.createdAt)}',
+                          style: GoogleFonts.lato(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+                        style: GoogleFonts.lato(fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: (isCompleted
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFFF6B6B))
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          isCompleted ? 'Delivered' : 'Cancelled',
+                          style: TextStyle(
+                            color: isCompleted
+                                ? const Color(0xFF2E7D32)
+                                : const Color(0xFFFF6B6B),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: Colors.grey[400],
+                    size: 20,
+                  ),
+                ],
+              ),
+
+              // Expanded details panel
+              if (_expanded) ...[
+                const Divider(height: 20),
+                if (order.address != null && order.address!.isNotEmpty) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF2E7D32)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          order.fullAddress ?? order.address!,
+                          style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[700]),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Text(
-                  'Order ${order.shortId}',
+                  'Order Details',
                   style: GoogleFonts.lato(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.grey[700],
                   ),
                 ),
-                Text(
-                  '${order.totalItems} items · ${DateFormat.yMMMd().format(order.createdAt)}',
-                  style: GoogleFonts.lato(
-                    fontSize: 11,
-                    color: Colors.grey[600],
+                const SizedBox(height: 6),
+                ...order.items.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFE8ECE8)),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: _buildItemImage(imageMap[item.productId] ?? ''),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '${item.quantity} x UGX ${NumberFormat('#,##0').format(item.price)}',
+                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          'UGX ${NumberFormat('#,##0').format(item.price * item.quantity)}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+                const Divider(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Amount',
+                      style: GoogleFonts.lato(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey[700]),
+                    ),
+                    Text(
+                      'UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+                      style: GoogleFonts.lato(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: const Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
-                style: GoogleFonts.lato(fontWeight: FontWeight.w800, fontSize: 13),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (isCompleted
-                          ? const Color(0xFF2E7D32)
-                          : const Color(0xFFFF6B6B))
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  isCompleted ? 'Delivered' : 'Cancelled',
-                  style: TextStyle(
-                    color: isCompleted
-                        ? const Color(0xFF2E7D32)
-                        : const Color(0xFFFF6B6B),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.d
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminOrdersScreen extends ConsumerStatefulWidget {
   final bool isTab;
@@ -234,6 +235,18 @@ class _AdminOrderCard extends StatefulWidget {
 class _AdminOrderCardState extends State<_AdminOrderCard> {
   bool _expanded = false;
 
+  Future<void> _callCustomer(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    try {
+      await launchUrl(uri);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open dialer.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
@@ -259,13 +272,14 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Show customer name as primary identifier
                       Text(
-                        'Order ${order.shortId}',
-                        style: const TextStyle(fontWeight: FontWeight.w900),
+                        order.displayName,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                       ),
                       Text(
-                        DateFormat.yMMMd().add_jm().format(order.createdAt),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        '${order.shortId} · ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -281,6 +295,17 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
               ],
             ),
           ),
+
+          // Customer contact info section
+          if (order.hasContactInfo || (order.customerEmail?.isNotEmpty == true)) ...[
+            const SizedBox(height: 8),
+            _CustomerContactSection(
+              phone: order.customerPhone,
+              email: order.customerEmail,
+              onCall: order.hasContactInfo ? () => _callCustomer(order.customerPhone!) : null,
+            ),
+          ],
+
           const SizedBox(height: 12),
           OrderDeliveryTimeline(status: status, compact: true),
           const SizedBox(height: 12),
@@ -350,6 +375,86 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
               onChanged: (value) {
                 if (value != null) widget.onStatusChanged(order, value);
               },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Reusable widget showing customer phone + email with a call button
+class _CustomerContactSection extends StatelessWidget {
+  final String? phone;
+  final String? email;
+  final VoidCallback? onCall;
+
+  const _CustomerContactSection({
+    required this.phone,
+    required this.email,
+    this.onCall,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8F1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD4E8D4)),
+      ),
+      child: Column(
+        children: [
+          if (phone != null && phone!.isNotEmpty)
+            Row(
+              children: [
+                const Icon(Icons.phone_outlined, size: 15, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    phone!,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (onCall != null)
+                  SizedBox(
+                    height: 28,
+                    child: FilledButton.icon(
+                      onPressed: onCall,
+                      icon: const Icon(Icons.call, size: 14),
+                      label: const Text('Call'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          if (email != null && email!.isNotEmpty) ...[
+            if (phone != null && phone!.isNotEmpty) const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.email_outlined, size: 15, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    email!,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

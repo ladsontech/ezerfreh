@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ezer_fresh/src/core/services/notification_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -31,8 +32,7 @@ class AuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     await GoogleSignIn.instance.initialize();
-    final GoogleSignInAccount googleUser = await GoogleSignIn.instance
-        .authenticate();
+    final googleUser = await GoogleSignIn.instance.authenticate();
 
     final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
@@ -43,10 +43,39 @@ class AuthService {
     return await _firebaseAuth.signInWithCredential(credential);
   }
 
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(PhoneAuthCredential) verificationCompleted,
+    required void Function(FirebaseAuthException) verificationFailed,
+    required void Function(String, int?) codeSent,
+    required void Function(String) codeAutoRetrievalTimeout,
+  }) async {
+    await _firebaseAuth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: verificationCompleted,
+      verificationFailed: verificationFailed,
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+      timeout: const Duration(seconds: 60),
+    );
+  }
+
+  Future<UserCredential> signInWithPhoneCredential(PhoneAuthCredential credential) async {
+    return await _firebaseAuth.signInWithCredential(credential);
+  }
+
   Future<void> signOut() async {
-    await NotificationService().unregisterCurrentUserToken();
-    await GoogleSignIn.instance.initialize();
-    await GoogleSignIn.instance.signOut();
+    try {
+      await NotificationService().unregisterCurrentUserToken();
+    } catch (e) {
+      debugPrint('Error unregistering notification token: $e');
+    }
+    try {
+      await GoogleSignIn.instance.initialize();
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      debugPrint('Error signing out Google: $e');
+    }
     return _firebaseAuth.signOut();
   }
 }

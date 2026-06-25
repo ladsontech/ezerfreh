@@ -661,7 +661,7 @@ class _RecentOrderRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      order.shortId,
+                      order.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -672,7 +672,7 @@ class _RecentOrderRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${order.totalItems} items / ${DateFormat.MMMd().add_jm().format(order.createdAt)}',
+                      '${order.shortId} · ${order.totalItems} items · ${DateFormat.MMMd().add_jm().format(order.createdAt)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -681,6 +681,23 @@ class _RecentOrderRow extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (order.hasContactInfo) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.phone_outlined, size: 11, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
+                          Text(
+                            order.customerPhone!,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

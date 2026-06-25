@@ -6,7 +6,30 @@ import 'package:ezer_fresh/src/data/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 export 'cart_provider.dart';
+
+// Onboarding Completed Provider
+class OnboardingNotifier extends AsyncNotifier<bool> {
+  static const _key = 'onboarding_completed';
+
+  @override
+  FutureOr<bool> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> completeOnboarding() async {
+    state = const AsyncValue.loading();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_key, true);
+    state = const AsyncValue.data(true);
+  }
+}
+
+final onboardingCompletedProvider =
+    AsyncNotifierProvider<OnboardingNotifier, bool>(OnboardingNotifier.new);
 
 // Auth Service Provider
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());

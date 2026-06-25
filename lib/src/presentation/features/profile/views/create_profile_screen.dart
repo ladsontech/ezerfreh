@@ -18,31 +18,46 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   final _addressController = TextEditingController();
   final _apartmentSuiteController = TextEditingController();
   
-  bool _isInitialized = false;
+  bool _isLoading = true;
+  bool _isSaving = false;
   double? _latitude;
   double? _longitude;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      final user = ref.read(authServiceProvider).currentUser;
-      if (user != null) {
-        ref.read(userProfileProvider(user.uid)).whenData((doc) {
-          if (doc.exists && doc.data() != null) {
-            final data = doc.data() as Map<String, dynamic>;
-            _nameController.text = data['name'] ?? '';
-            _contactController.text = data['contact'] ?? '';
-            _addressController.text = data['address'] ?? '';
-            _apartmentSuiteController.text = data['apartmentSuite'] ?? '';
-            _latitude = (data['latitude'] as num?)?.toDouble();
-            _longitude = (data['longitude'] as num?)?.toDouble();
-            if (mounted) setState(() {});
-          }
-        });
-      }
-      _isInitialized = true;
+  void initState() {
+    super.initState();
+    // Load existing profile data after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfileData());
+  }
+
+  Future<void> _loadProfileData() async {
+    final user = ref.read(authServiceProvider).currentUser;
+    if (user == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
     }
+
+    try {
+      final firestoreService = ref.read(firestoreServiceProvider);
+      final doc = await firestoreService.getUserProfileDoc(user.uid);
+      
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data() as Map<String, dynamic>;
+        _nameController.text = data['name'] ?? '';
+        _contactController.text = data['contact'] ?? '';
+        _addressController.text = data['address'] ?? '';
+        _apartmentSuiteController.text = data['apartmentSuite'] ?? '';
+        _latitude = (data['latitude'] as num?)?.toDouble();
+        _longitude = (data['longitude'] as num?)?.toDouble();
+      } else {
+        // Pre-fill name and email from auth if available
+        _nameController.text = user.displayName ?? '';
+      }
+    } catch (e) {
+      debugPrint('Error loading profile: $e');
+    }
+
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -95,6 +110,57 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     );
   }
 
+  Future<void> _saveProfile() async {
+    final user = ref.read(authServiceProvider).currentUser;
+    if (user == null) return;
+
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      await ref.read(firestoreServiceProvider).setUserProfile(user.uid, {
+        'name': name,
+        'contact': _contactController.text.trim(),
+        'address': _addressController.text.trim(),
+        'apartmentSuite': _apartmentSuiteController.text.trim(),
+        'latitude': _latitude,
+        'longitude': _longitude,
+        'email': user.email ?? '',
+        'isProfileComplete': true,
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Profile saved successfully!'),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,71 +171,66 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildTextField(
-              controller: _nameController,
-              label: 'Full Name',
-              hint: 'Enter your name',
-              icon: Icons.person_outline,
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _contactController,
-              label: 'Contact Number',
-              hint: '+256 000 000 000',
-              icon: Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _addressController,
-              label: 'Delivery Address',
-              hint: 'Select from map',
-              icon: Icons.location_on_outlined,
-              readOnly: true,
-              onTap: _openLocationPicker,
-              suffix: const Icon(Icons.map_outlined, color: Color(0xFF2E7D32)),
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _apartmentSuiteController,
-              label: 'Apartment, Suite, Plot, or Floor (Optional)',
-              hint: 'e.g., Apt 3B, Plot 14, or directions',
-              icon: Icons.apartment_outlined,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                final user = ref.read(authServiceProvider).currentUser;
-                if (user != null) {
-                  ref.read(firestoreServiceProvider).setUserProfile(user.uid, {
-                    'name': _nameController.text,
-                    'contact': _contactController.text,
-                    'address': _addressController.text,
-                    'apartmentSuite': _apartmentSuiteController.text,
-                    'latitude': _latitude,
-                    'longitude': _longitude,
-                    'isProfileComplete': true,
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                elevation: 0,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildTextField(
+                    controller: _nameController,
+                    label: 'Full Name',
+                    hint: 'Enter your name',
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _contactController,
+                    label: 'Contact Number (Required for delivery)',
+                    hint: '+256 000 000 000',
+                    icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _addressController,
+                    label: 'Delivery Address',
+                    hint: 'Select from map',
+                    icon: Icons.location_on_outlined,
+                    readOnly: true,
+                    onTap: _openLocationPicker,
+                    suffix: const Icon(Icons.map_outlined, color: Color(0xFF2E7D32)),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _apartmentSuiteController,
+                    label: 'Apartment, Suite, Plot, or Floor (Optional)',
+                    hint: 'e.g., Apt 3B, Plot 14, or directions',
+                    icon: Icons.apartment_outlined,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: _isSaving ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.5),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      elevation: 0,
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text('Save Profile', style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
-              child: Text('Complete Profile', style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-          ],
-        ),
-      ),
     );
   }
 

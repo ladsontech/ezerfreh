@@ -29,6 +29,7 @@ class RouterNotifier extends ChangeNotifier {
   RouterNotifier(this._ref) {
     _ref.listen(authStateProvider, (_, __) => notifyListeners());
     _ref.listen(userRoleProvider, (_, __) => notifyListeners());
+    _ref.listen(onboardingCompletedProvider, (_, __) => notifyListeners());
   }
 }
 
@@ -45,49 +46,102 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
       final roleState = ref.read(userRoleProvider);
+      final onboardingState = ref.read(onboardingCompletedProvider);
+
+      // 1. If onboarding or auth is loading, don't redirect yet
+      if (onboardingState.isLoading || authState.isLoading) {
+        return null;
+      }
+
+      final isOnboardingCompleted = onboardingState.value ?? false;
+      final loc = state.matchedLocation;
+
+      // 2. Enforce onboarding first
+      if (!isOnboardingCompleted) {
+        if (loc != '/onboarding') {
+          return '/onboarding';
+        }
+        return null;
+      } else {
+        // If onboarding is completed and we're still on /onboarding, go to /
+        if (loc == '/onboarding') {
+          return '/';
+        }
+      }
 
       final isAuth = authState.value != null;
-      final isLoggingIn =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/create-profile' ||
-          state.matchedLocation == '/onboarding';
 
-      if (!isAuth && !authState.isLoading) {
-        return isLoggingIn ? null : '/onboarding';
-      }
-
-      if (isAuth && (roleState.isLoading || !roleState.hasValue)) {
-        return state.matchedLocation == '/' ? null : '/';
-      }
-
-      if (isAuth && roleState.hasValue) {
-        final role = roleState.value;
-        final loc = state.matchedLocation;
-
-        if (loc == '/login' || loc == '/') {
-          if (role == 'admin') return '/admin';
-          if (role == 'rider') return '/rider';
+      // 3. Handle guest (unauthenticated) users
+      if (!isAuth) {
+        // Allow list for guests
+        final allowedGuestRoutes = [
+          '/',
+          '/login',
+          '/home',
+          '/products',
+          '/product-detail',
+          '/all-products',
+        ];
+        
+        final isAllowed = allowedGuestRoutes.contains(loc) || 
+            loc.startsWith('/products/') || 
+            loc.startsWith('/product-detail/');
+        
+        if (!isAllowed) {
+          return '/login';
+        }
+        
+        if (loc == '/') {
           return '/home';
         }
+        
+        return null;
+      }
 
-        // Bound enforcement
-        if (role == 'admin' &&
-            !loc.startsWith('/admin') &&
-            !loc.startsWith('/product-detail') &&
-            !loc.startsWith('/products') &&
-            loc != '/create-profile') {
+      // 4. Handle authenticated users
+      if (roleState.isLoading || !roleState.hasValue) {
+        return loc == '/' ? null : '/';
+      }
+
+      final role = roleState.value;
+
+      if (loc == '/login' || loc == '/') {
+        if (role == 'admin') return '/admin';
+        if (role == 'rider') return '/rider';
+        return '/home';
+      }
+
+      // Role boundaries enforcement
+      if (role == 'admin') {
+        final allowedAdminRoutes = [
+          '/admin',
+          '/admin/products',
+          '/admin/profile',
+          '/admin/upload',
+          '/admin/orders',
+          '/admin/users',
+          '/create-profile',
+        ];
+        
+        final isAdminLoc = allowedAdminRoutes.any((route) => loc.startsWith(route)) ||
+            loc.startsWith('/admin/products/') ||
+            loc.startsWith('/product-detail') ||
+            loc.startsWith('/products');
+            
+        if (!isAdminLoc) {
           return '/admin';
         }
-        if (role == 'rider' &&
-            !loc.startsWith('/rider') &&
-            loc != '/create-profile') {
+      } else if (role == 'rider') {
+        final isRiderLoc = loc.startsWith('/rider') || loc == '/create-profile';
+        if (!isRiderLoc) {
           return '/rider';
         }
-        if (role == 'customer' &&
-            (loc.startsWith('/admin') || loc.startsWith('/rider'))) {
+      } else if (role == 'customer') {
+        if (loc.startsWith('/admin') || loc.startsWith('/rider')) {
           return '/home';
         }
       }
+
       return null;
     },
     routes: [

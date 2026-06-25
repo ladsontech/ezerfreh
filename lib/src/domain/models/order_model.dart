@@ -47,6 +47,11 @@ class OrderModel {
   final String? riderId;
   final DateTime? updatedAt;
 
+  // Customer contact info — stored at order-time so admin/rider always has it
+  final String? customerName;
+  final String? customerPhone;
+  final String? customerEmail;
+
   OrderModel({
     required this.id,
     required this.userId,
@@ -60,6 +65,9 @@ class OrderModel {
     this.longitude,
     this.riderId,
     this.updatedAt,
+    this.customerName,
+    this.customerPhone,
+    this.customerEmail,
   });
 
   OrderStatus get orderStatus => OrderStatus.fromString(status);
@@ -71,6 +79,15 @@ class OrderModel {
     if (id.length <= 8) return '#${id.toUpperCase()}';
     return '#${id.substring(0, 8).toUpperCase()}';
   }
+
+  /// Display name: customer name if available, otherwise short order ID
+  String get displayName => customerName?.isNotEmpty == true
+      ? customerName!
+      : 'Customer $shortId';
+
+  /// Whether we have at least a phone number for the customer
+  bool get hasContactInfo =>
+      customerPhone != null && customerPhone!.isNotEmpty;
 
   String? get fullAddress {
     if (address == null) return null;
@@ -100,6 +117,9 @@ class OrderModel {
       longitude: (data['longitude'] as num?)?.toDouble(),
       riderId: data['riderId'],
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+      customerName: data['customerName'],
+      customerPhone: data['customerPhone'],
+      customerEmail: data['customerEmail'],
     );
   }
 }

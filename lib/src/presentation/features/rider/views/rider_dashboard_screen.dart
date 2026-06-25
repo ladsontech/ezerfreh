@@ -376,6 +376,18 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
   bool _updating = false;
   bool _navigating = false;
 
+  Future<void> _callCustomer(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    try {
+      await launchUrl(uri);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open dialer.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
@@ -411,8 +423,9 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Customer name as primary identifier
                     Text(
-                      'Order ${order.shortId}',
+                      order.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -423,7 +436,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      DateFormat.yMMMd().add_jm().format(order.createdAt),
+                      '${order.shortId} · ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -438,6 +451,17 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
               OrderStatusBadge(status: status, compact: true),
             ],
           ),
+
+          // Customer contact section with call button
+          if (order.hasContactInfo || (order.customerEmail?.isNotEmpty == true)) ...[
+            const SizedBox(height: 10),
+            _CustomerContactBar(
+              phone: order.customerPhone,
+              email: order.customerEmail,
+              onCall: order.hasContactInfo ? () => _callCustomer(order.customerPhone!) : null,
+            ),
+          ],
+
           const SizedBox(height: 10),
           OrderDeliveryTimeline(status: status, compact: true),
           if (order.items.isNotEmpty) ...[
@@ -618,6 +642,94 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
     } finally {
       if (mounted) setState(() => _navigating = false);
     }
+  }
+}
+
+/// Customer contact bar with call button for rider
+class _CustomerContactBar extends StatelessWidget {
+  final String? phone;
+  final String? email;
+  final VoidCallback? onCall;
+
+  const _CustomerContactBar({
+    required this.phone,
+    required this.email,
+    this.onCall,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFC8E6C9)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (phone != null && phone!.isNotEmpty)
+                  Row(
+                    children: [
+                      const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF2E7D32)),
+                      const SizedBox(width: 6),
+                      Text(
+                        phone!,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1B5E20),
+                        ),
+                      ),
+                    ],
+                  ),
+                if (email != null && email!.isNotEmpty) ...[
+                  if (phone != null && phone!.isNotEmpty) const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(Icons.email_outlined, size: 14, color: Color(0xFF2E7D32)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          email!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (onCall != null)
+            SizedBox(
+              height: 36,
+              child: FilledButton.icon(
+                onPressed: onCall,
+                icon: const Icon(Icons.call, size: 16),
+                label: const Text('Call'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

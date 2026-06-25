@@ -52,6 +52,48 @@ class CartScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _showPhoneRequiredDialog(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.phone_outlined, color: Colors.orange, size: 28),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Phone Number Required',
+                style: GoogleFonts.lato(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Please add your phone number to your profile so our rider can contact you about your delivery.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push('/create-profile');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Add Phone Number'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _placeOrder(
     BuildContext context,
     WidgetRef ref,
@@ -93,6 +135,10 @@ class CartScreen extends ConsumerWidget {
         'apartmentSuite': profileData['apartmentSuite'] ?? '',
         'latitude': profileData['latitude'],
         'longitude': profileData['longitude'],
+        // Customer contact info — visible to admin and rider
+        'customerName': profileData['name'] ?? '',
+        'customerPhone': profileData['contact'] ?? '',
+        'customerEmail': profileData['email'] ?? '',
       });
 
       ref.read(cartProvider.notifier).clear();
@@ -345,9 +391,39 @@ class CartScreen extends ConsumerWidget {
                             onPressed: () {
                               final authUser = ref.read(authServiceProvider).currentUser;
                               if (authUser == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please login to place an order'),
+                                // Guest user — prompt to sign in
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    title: Row(
+                                      children: [
+                                        const Icon(Icons.login, color: Color(0xFF2E7D32), size: 28),
+                                        const SizedBox(width: 8),
+                                        Text('Sign In Required', style: GoogleFonts.lato(fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                    content: const Text(
+                                      'Please sign in or create an account to place your order. Your cart will be saved.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          context.push('/login');
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF2E7D32),
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        ),
+                                        child: const Text('Sign In'),
+                                      ),
+                                    ],
                                   ),
                                 );
                                 return;
@@ -360,6 +436,10 @@ class CartScreen extends ConsumerWidget {
                                   profileData['address'] == null ||
                                   (profileData['address'] as String).isEmpty) {
                                 _showCompleteProfileDialog(context);
+                              } else if (profileData['contact'] == null ||
+                                  (profileData['contact'] as String).trim().isEmpty) {
+                                // Phone number required for delivery coordination
+                                _showPhoneRequiredDialog(context);
                               } else {
                                 _placeOrder(
                                   context,
@@ -410,4 +490,3 @@ class CartScreen extends ConsumerWidget {
     );
   }
 }
-
