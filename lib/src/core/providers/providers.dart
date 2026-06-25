@@ -95,6 +95,45 @@ final userRoleProvider = StreamProvider<String>((ref) {
   return controller.stream;
 });
 
+// Profile Completion Provider — reactive detection of completed customer/rider profiles
+final isProfileCompleteProvider = StreamProvider<bool>((ref) {
+  ref.keepAlive();
+  final firestoreService = ref.read(firestoreServiceProvider);
+
+  final controller = StreamController<bool>();
+  StreamSubscription<DocumentSnapshot>? profileSub;
+
+  final authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
+    profileSub?.cancel();
+    profileSub = null;
+
+    if (user == null) {
+      controller.add(true); // default true for guests so they aren't blocked/redirected to profile
+    } else {
+      profileSub = firestoreService.getUserProfile(user.uid).listen(
+        (doc) {
+          if (!doc.exists) {
+            controller.add(false); // No profile doc exists yet
+          } else {
+            final data = doc.data() as Map<String, dynamic>?;
+            final isComplete = data?['isProfileComplete'] as bool? ?? false;
+            controller.add(isComplete);
+          }
+        },
+        onError: (_) => controller.add(false),
+      );
+    }
+  });
+
+  ref.onDispose(() {
+    profileSub?.cancel();
+    authSub.cancel();
+    controller.close();
+  });
+
+  return controller.stream;
+});
+
 // Search Query Provider (Using modern NotifierProvider)
 class SearchQueryNotifier extends Notifier<String> {
   @override

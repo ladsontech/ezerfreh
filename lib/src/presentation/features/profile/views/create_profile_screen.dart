@@ -1,5 +1,6 @@
 import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/presentation/widgets/location_picker.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -147,7 +148,20 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
         ),
       );
 
-      Navigator.pop(context);
+      if (mounted) {
+        if (Navigator.of(context).canPop()) {
+          Navigator.pop(context);
+        } else {
+          final role = ref.read(userRoleProvider).value ?? 'customer';
+          if (role == 'admin') {
+            context.go('/admin');
+          } else if (role == 'rider') {
+            context.go('/rider');
+          } else {
+            context.go('/home');
+          }
+        }
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

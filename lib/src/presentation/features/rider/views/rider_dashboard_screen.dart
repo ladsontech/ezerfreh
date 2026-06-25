@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/core/providers/providers.dart';
@@ -463,12 +462,6 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
           ],
 
           const SizedBox(height: 10),
-          OrderDeliveryTimeline(status: status, compact: true),
-          if (order.items.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _ItemImageStrip(order: order, imageMap: widget.imageMap),
-          ],
-          const SizedBox(height: 10),
           Text(
             order.items
                 .map((item) => '${item.quantity}x ${item.name}')
@@ -660,11 +653,11 @@ class _CustomerContactBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
+        color: const Color(0xFFF9F9F9),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFC8E6C9)),
+        border: Border.all(color: const Color(0xFFEFEFEF)),
       ),
       child: Row(
         children: [
@@ -675,33 +668,32 @@ class _CustomerContactBar extends StatelessWidget {
                 if (phone != null && phone!.isNotEmpty)
                   Row(
                     children: [
-                      const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF2E7D32)),
-                      const SizedBox(width: 6),
+                      const Icon(Icons.phone_outlined, size: 16, color: Colors.black87),
+                      const SizedBox(width: 8),
                       Text(
                         phone!,
                         style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1B5E20),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
                     ],
                   ),
                 if (email != null && email!.isNotEmpty) ...[
-                  if (phone != null && phone!.isNotEmpty) const SizedBox(height: 3),
+                  if (phone != null && phone!.isNotEmpty) const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.email_outlined, size: 14, color: Color(0xFF2E7D32)),
-                      const SizedBox(width: 6),
+                      const Icon(Icons.email_outlined, size: 16, color: Colors.grey),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           email!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: Colors.grey[700],
                           ),
                         ),
                       ),
@@ -714,13 +706,13 @@ class _CustomerContactBar extends StatelessWidget {
           if (onCall != null)
             SizedBox(
               height: 36,
-              child: FilledButton.icon(
+              child: OutlinedButton.icon(
                 onPressed: onCall,
-                icon: const Icon(Icons.call, size: 16),
+                icon: const Icon(Icons.call, size: 14),
                 label: const Text('Call'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF2E7D32),
+                  side: const BorderSide(color: Color(0xFF2E7D32)),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -781,71 +773,7 @@ class _RiderStatusSelector extends StatelessWidget {
   }
 }
 
-class _ItemImageStrip extends StatelessWidget {
-  final OrderModel order;
-  final Map<String, String> imageMap;
-
-  const _ItemImageStrip({required this.order, required this.imageMap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: order.items.length,
-        itemBuilder: (context, index) {
-          final item = order.items[index];
-          final imageUrl = imageMap[item.productId] ?? '';
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Stack(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE8ECE8)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: _buildItemImage(imageUrl),
-                  ),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.65),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(4),
-                        bottomRight: Radius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'x${item.quantity}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
+// _ItemImageStrip was removed to simplify the order cards layout.
 
 class _OrderMetaWrap extends StatelessWidget {
   final OrderModel order;
@@ -1091,33 +1019,7 @@ class _RiderStatData {
   });
 }
 
-Widget _buildItemImage(String imageUrl) {
-  final url = imageUrl.trim();
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      placeholder: (_, __) => Container(color: Colors.grey[100]),
-      errorWidget: (_, __, ___) => const Icon(Icons.broken_image, size: 16),
-    );
-  }
-  if (url.isNotEmpty) {
-    return Image.asset(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) =>
-          const Icon(Icons.image_not_supported, size: 16),
-    );
-  }
-  return Container(
-    color: const Color(0xFFF1F8F1),
-    child: const Icon(
-      Icons.shopping_basket_outlined,
-      size: 16,
-      color: Color(0xFFA5D6A7),
-    ),
-  );
-}
+// _buildItemImage was removed because item image strip was removed from rider cards.
 
 BoxDecoration _cardDecoration({Color? borderColor}) {
   return BoxDecoration(

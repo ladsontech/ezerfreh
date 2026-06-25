@@ -226,6 +226,10 @@ class CartScreen extends ConsumerWidget {
     final cartItems = ref.watch(cartProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final authUser = ref.watch(authStateProvider).value;
+    final profileAsync = authUser != null 
+        ? ref.watch(userProfileProvider(authUser.uid))
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -389,7 +393,6 @@ class CartScreen extends ConsumerWidget {
                               ),
                             ),
                             onPressed: () {
-                              final authUser = ref.read(authServiceProvider).currentUser;
                               if (authUser == null) {
                                 // Guest user — prompt to sign in
                                 showDialog(
@@ -429,8 +432,7 @@ class CartScreen extends ConsumerWidget {
                                 return;
                               }
 
-                              final profileSnap = ref.read(userProfileProvider(authUser.uid)).value;
-                              final profileData = profileSnap?.data() as Map<String, dynamic>?;
+                              final profileData = profileAsync?.value?.data() as Map<String, dynamic>?;
 
                               if (profileData == null ||
                                   profileData['address'] == null ||

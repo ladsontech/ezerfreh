@@ -306,26 +306,25 @@ class _AdminOrderCardState extends State<_AdminOrderCard> {
             ),
           ],
 
-          const SizedBox(height: 12),
-          OrderDeliveryTimeline(status: status, compact: true),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
-            '${order.totalItems} items, UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
+            '${order.totalItems} items · UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800),
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
           ),
           if (order.fullAddress != null) ...[
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 16),
+                const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     order.fullAddress!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12.5),
                   ),
                 ),
               ],
@@ -398,40 +397,42 @@ class _CustomerContactSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F8F1),
+        color: const Color(0xFFF9F9F9),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD4E8D4)),
+        border: Border.all(color: const Color(0xFFEFEFEF)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (phone != null && phone!.isNotEmpty)
             Row(
               children: [
-                const Icon(Icons.phone_outlined, size: 15, color: Color(0xFF2E7D32)),
+                const Icon(Icons.phone_outlined, size: 16, color: Colors.black87),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     phone!,
                     style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
                 ),
                 if (onCall != null)
                   SizedBox(
-                    height: 28,
-                    child: FilledButton.icon(
+                    height: 32,
+                    child: OutlinedButton.icon(
                       onPressed: onCall,
                       icon: const Icon(Icons.call, size: 14),
                       label: const Text('Call'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF2E7D32),
+                        side: const BorderSide(color: Color(0xFF2E7D32)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
                     ),
@@ -439,18 +440,17 @@ class _CustomerContactSection extends StatelessWidget {
               ],
             ),
           if (email != null && email!.isNotEmpty) ...[
-            if (phone != null && phone!.isNotEmpty) const SizedBox(height: 4),
+            if (phone != null && phone!.isNotEmpty) const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.email_outlined, size: 15, color: Color(0xFF2E7D32)),
+                const Icon(Icons.email_outlined, size: 16, color: Colors.grey),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     email!,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 12,
                       color: Colors.grey[700],
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),

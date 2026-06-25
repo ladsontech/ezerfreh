@@ -30,6 +30,7 @@ class RouterNotifier extends ChangeNotifier {
     _ref.listen(authStateProvider, (_, __) => notifyListeners());
     _ref.listen(userRoleProvider, (_, __) => notifyListeners());
     _ref.listen(onboardingCompletedProvider, (_, __) => notifyListeners());
+    _ref.listen(isProfileCompleteProvider, (_, __) => notifyListeners());
   }
 }
 
@@ -96,6 +97,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         }
         
         return null;
+      }
+
+      // Check if profile completion is required
+      final profileCompleteState = ref.read(isProfileCompleteProvider);
+      if (profileCompleteState.isLoading || !profileCompleteState.hasValue) {
+        return loc == '/' ? null : '/';
+      }
+
+      final isProfileComplete = profileCompleteState.value ?? false;
+      if (!isProfileComplete) {
+        if (loc != '/create-profile') {
+          return '/create-profile';
+        }
+        return null;
+      } else {
+        if (loc == '/create-profile') {
+          final role = roleState.value ?? 'customer';
+          if (role == 'admin') return '/admin';
+          if (role == 'rider') return '/rider';
+          return '/home';
+        }
       }
 
       // 4. Handle authenticated users
