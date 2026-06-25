@@ -38,16 +38,16 @@ exports.notifyStaffOnOrderCreated = onDocumentCreated(
   async (event) => {
     const order = event.data.data() || {};
     const orderId = event.params.orderId;
-    const shortId = shortOrderId(orderId);
     const total = formatMoney(order.totalAmount);
     const status = text(order.status, 'Pending');
-    const body = `${shortId} placed${total ? ` for ${total}` : ''}.`;
+    const adminBody = `A new order has been placed${total ? ` for ${total}` : ''}.`;
+    const riderBody = `A new order is in the queue and is ${status.toLowerCase()}.`;
 
     await Promise.all([
       sendToRoles(adminRoles, {
         notification: {
           title: 'New order placed',
-          body,
+          body: adminBody,
         },
         data: {
           type: 'order_created',
@@ -58,7 +58,7 @@ exports.notifyStaffOnOrderCreated = onDocumentCreated(
       sendToRoles(riderRoles, {
         notification: {
           title: 'New order in queue',
-          body: `${shortId} is ${status}.`,
+          body: riderBody,
         },
         data: {
           type: 'order_created',
@@ -83,12 +83,31 @@ exports.notifyOrderStatusChanged = onDocumentUpdated(
     }
 
     const orderId = event.params.orderId;
-    const shortId = shortOrderId(orderId);
+    
+    // Friendly customer-facing status messages
+    let customerBody = `Your order status has been updated to ${status}.`;
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus === 'processing') {
+      customerBody = 'Your order is being processed successfully.';
+    } else if (lowerStatus === 'ready for pickup') {
+      customerBody = 'Your order is ready for pickup.';
+    } else if (lowerStatus === 'assigned') {
+      customerBody = 'A delivery rider has been assigned to your order.';
+    } else if (lowerStatus === 'picked up' || lowerStatus === 'on the way') {
+      customerBody = 'Your order is on the way!';
+    } else if (lowerStatus === 'arrived') {
+      customerBody = 'Your order has arrived!';
+    } else if (lowerStatus === 'completed') {
+      customerBody = 'Your order has been successfully delivered and completed.';
+    } else if (lowerStatus === 'cancelled') {
+      customerBody = 'Your order has been cancelled.';
+    }
+
     const tasks = [
       sendToRoles(adminRoles, {
         notification: {
           title: 'Order status changed',
-          body: `${shortId}: ${previousStatus || 'Unknown'} -> ${status}.`,
+          body: `Order changed status from ${previousStatus || 'Pending'} to ${status}.`,
         },
         data: {
           type: 'order_status_changed',
@@ -104,7 +123,7 @@ exports.notifyOrderStatusChanged = onDocumentUpdated(
         sendToUser(after.userId, {
           notification: {
             title: 'Order status updated',
-            body: `${shortId} is now ${status}.`,
+            body: customerBody,
           },
           data: {
             type: 'order_status_changed',
@@ -121,7 +140,7 @@ exports.notifyOrderStatusChanged = onDocumentUpdated(
         sendToRoles(riderRoles, {
           notification: {
             title: 'Order ready for pickup',
-            body: `${shortId} is ready for a rider.`,
+            body: `A new order is ready for pickup in the queue.`,
           },
           data: {
             type: 'order_ready_for_pickup',
@@ -137,7 +156,7 @@ exports.notifyOrderStatusChanged = onDocumentUpdated(
         sendToUser(after.riderId, {
           notification: {
             title: 'Order assigned to you',
-            body: `${shortId} is assigned and ${status}.`,
+            body: `A new order has been assigned to you and is ${status.toLowerCase()}.`,
           },
           data: {
             type: 'order_assigned',

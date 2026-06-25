@@ -126,7 +126,7 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order ${order.shortId} updated to ${status.label}.'),
+          content: Text('Order status successfully updated to ${status.label}.'),
         ),
       );
     } catch (error) {

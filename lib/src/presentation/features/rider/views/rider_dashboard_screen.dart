@@ -523,8 +523,8 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
       if (status == OrderStatus.completed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Order ${widget.order.shortId} delivered successfully.',
+            content: const Text(
+              'Order delivered successfully.',
             ),
             backgroundColor: const Color(0xFF2E7D32),
             behavior: SnackBarBehavior.floating,
@@ -538,7 +538,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Order ${widget.order.shortId} updated to ${status.label}.',
+              'Order status updated to ${status.label}.',
             ),
           ),
         );
@@ -577,8 +577,8 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
       if (next == OrderStatus.completed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Order ${widget.order.shortId} delivered successfully.',
+            content: const Text(
+              'Order delivered successfully.',
             ),
             backgroundColor: const Color(0xFF2E7D32),
             behavior: SnackBarBehavior.floating,
@@ -592,7 +592,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Order ${widget.order.shortId} updated to ${next?.label ?? 'next status'}.',
+              'Order status updated to ${next?.label ?? 'next status'}.',
             ),
           ),
         );
