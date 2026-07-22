@@ -1,4 +1,4 @@
-﻿import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
@@ -471,4 +471,3 @@ class _ProductImageFallback extends StatelessWidget {
     );
   }
 }
-

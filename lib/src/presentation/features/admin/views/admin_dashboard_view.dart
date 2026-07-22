@@ -1,4 +1,4 @@
-﻿import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/core/providers/user_provider.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
@@ -685,7 +685,11 @@ class _RecentOrderRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(Icons.phone_outlined, size: 11, color: Colors.grey.shade500),
+                          Icon(
+                            Icons.phone_outlined,
+                            size: 11,
+                            color: Colors.grey.shade500,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             order.customerPhone!,
@@ -790,4 +794,3 @@ BoxDecoration _panelDecoration({Color? borderColor}) {
     ],
   );
 }
-

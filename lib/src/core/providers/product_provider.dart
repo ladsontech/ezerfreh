@@ -1,4 +1,4 @@
-﻿import 'package:ezer_fresh/src/data/services/product_repository.dart';
+import 'package:ezer_fresh/src/data/services/product_repository.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,7 +19,9 @@ final productsProvider = Provider.family<AsyncValue<List<Product>>, String>((
 ) {
   ref.keepAlive();
 
-  return ref.watch(allProductsProvider).whenData(
+  return ref
+      .watch(allProductsProvider)
+      .whenData(
         (products) => products
             .where((product) => product.categoryId == categoryId)
             .toList(growable: false),

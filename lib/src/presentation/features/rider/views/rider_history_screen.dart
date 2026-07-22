@@ -1,4 +1,4 @@
-﻿import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
@@ -511,4 +511,3 @@ BoxDecoration _cardDecoration({Color? borderColor}) {
     ],
   );
 }
-

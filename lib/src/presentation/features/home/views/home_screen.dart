@@ -26,67 +26,67 @@ class HomeScreen extends ConsumerWidget {
         },
         child: CustomScrollView(
           slivers: [
-          _buildTopBar(context),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  _buildSearchBar(ref),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-          if (searchQuery.isNotEmpty)
-            _buildSearchResults(context, ref, searchQuery)
-          else ...[
+            _buildTopBar(context),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildPromoBanner(),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader('Categories'),
                     const SizedBox(height: 16),
-                    _buildCategoryList(context, categories),
+                    _buildSearchBar(ref),
                     const SizedBox(height: 24),
-                    _buildSectionHeader(
-                      'Flash Sales',
-                      () => context.push('/all-products'),
-                    ),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
-            _buildFeaturedProductsGrid(context, ref, '1'),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _buildSectionHeader(
-                  'All Products',
-                  () => context.push('/all-products'),
+            if (searchQuery.isNotEmpty)
+              _buildSearchResults(context, ref, searchQuery)
+            else ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPromoBanner(),
+                      const SizedBox(height: 24),
+                      _buildSectionHeader('Categories'),
+                      const SizedBox(height: 16),
+                      _buildCategoryList(context, categories),
+                      const SizedBox(height: 24),
+                      _buildSectionHeader(
+                        'Flash Sales',
+                        () => context.push('/all-products'),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            _buildFeaturedProductsGrid(context, ref, '2'),
-            SliverPadding(
-              padding: EdgeInsets.only(
-                bottom: ref.watch(cartProvider).isNotEmpty ? 180.0 : 32.0,
+              _buildFeaturedProductsGrid(context, ref, '1'),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildSectionHeader(
+                    'All Products',
+                    () => context.push('/all-products'),
+                  ),
+                ),
               ),
-            ),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              _buildFeaturedProductsGrid(context, ref, '2'),
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: ref.watch(cartProvider).isNotEmpty ? 180.0 : 32.0,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildSearchResults(
@@ -301,7 +301,10 @@ class HomeScreen extends ConsumerWidget {
                   ref.read(searchQueryProvider.notifier).query = value,
               decoration: InputDecoration(
                 hintText: 'Search vegetables, fruits, etc',
-                hintStyle: GoogleFonts.plusJakartaSans(color: const Color(0xFF8A8F8A), fontSize: 14),
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF8A8F8A),
+                  fontSize: 14,
+                ),
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF8A8F8A)),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),

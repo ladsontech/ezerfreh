@@ -34,7 +34,10 @@ class ProductListScreen extends ConsumerWidget {
           Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8,
+                ),
                 child: Container(
                   height: 52,
                   decoration: BoxDecoration(
@@ -55,7 +58,10 @@ class ProductListScreen extends ConsumerWidget {
                       hintText: category == null
                           ? 'Search for products...'
                           : 'Search for ${category!.name.toLowerCase()}...',
-                      hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                      ),
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -72,12 +78,12 @@ class ProductListScreen extends ConsumerWidget {
                   child: productsAsyncValue.when(
                     data: (products) {
                       final filteredProducts = products.where((p) {
-                        return p.name
-                                .toLowerCase()
-                                .contains(searchQuery.toLowerCase()) ||
-                            p.description
-                                .toLowerCase()
-                                .contains(searchQuery.toLowerCase());
+                        return p.name.toLowerCase().contains(
+                              searchQuery.toLowerCase(),
+                            ) ||
+                            p.description.toLowerCase().contains(
+                              searchQuery.toLowerCase(),
+                            );
                       }).toList();
 
                       if (filteredProducts.isEmpty) {
@@ -89,15 +95,20 @@ class ProductListScreen extends ConsumerWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.inventory_2_outlined,
-                                    size: 64, color: Colors.grey[300]),
+                                Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 64,
+                                  color: Colors.grey[300],
+                                ),
                                 const SizedBox(height: 16),
                                 Text(
                                   searchQuery.isEmpty
                                       ? 'No products found'
                                       : 'No matches for "$searchQuery"',
                                   style: GoogleFonts.lato(
-                                      color: Colors.grey[600], fontSize: 16),
+                                    color: Colors.grey[600],
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ],
                             ),
@@ -112,12 +123,13 @@ class ProductListScreen extends ConsumerWidget {
                           16.0,
                           ref.watch(cartProvider).isNotEmpty ? 88.0 : 16.0,
                         ),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16.0,
-                          mainAxisSpacing: 16.0,
-                          childAspectRatio: 0.68,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16.0,
+                              mainAxisSpacing: 16.0,
+                              childAspectRatio: 0.68,
+                            ),
                         itemCount: filteredProducts.length,
                         itemBuilder: (context, index) {
                           final product = filteredProducts[index];
@@ -125,7 +137,8 @@ class ProductListScreen extends ConsumerWidget {
                         },
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (error, stackTrace) =>
                         Center(child: Text('Error: $error')),
                   ),

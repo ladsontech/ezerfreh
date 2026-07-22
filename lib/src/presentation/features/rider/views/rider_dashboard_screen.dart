@@ -1,4 +1,4 @@
-﻿import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/data/services/order_service.dart';
@@ -381,9 +381,9 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
       await launchUrl(uri);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open dialer.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open dialer.')));
     }
   }
 
@@ -435,7 +435,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${order.shortId} Â· ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
+                      '${order.shortId} · ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -452,12 +452,15 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
           ),
 
           // Customer contact section with call button
-          if (order.hasContactInfo || (order.customerEmail?.isNotEmpty == true)) ...[
+          if (order.hasContactInfo ||
+              (order.customerEmail?.isNotEmpty == true)) ...[
             const SizedBox(height: 10),
             _CustomerContactBar(
               phone: order.customerPhone,
               email: order.customerEmail,
-              onCall: order.hasContactInfo ? () => _callCustomer(order.customerPhone!) : null,
+              onCall: order.hasContactInfo
+                  ? () => _callCustomer(order.customerPhone!)
+                  : null,
             ),
           ],
 
@@ -523,9 +526,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
       if (status == OrderStatus.completed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-              'Order delivered successfully.',
-            ),
+            content: const Text('Order delivered successfully.'),
             backgroundColor: const Color(0xFF2E7D32),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -536,11 +537,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
         context.go('/rider/history');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Order status updated to ${status.label}.',
-            ),
-          ),
+          SnackBar(content: Text('Order status updated to ${status.label}.')),
         );
       }
     } catch (error) {
@@ -577,9 +574,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
       if (next == OrderStatus.completed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-              'Order delivered successfully.',
-            ),
+            content: const Text('Order delivered successfully.'),
             backgroundColor: const Color(0xFF2E7D32),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -668,7 +663,11 @@ class _CustomerContactBar extends StatelessWidget {
                 if (phone != null && phone!.isNotEmpty)
                   Row(
                     children: [
-                      const Icon(Icons.phone_outlined, size: 16, color: Colors.black87),
+                      const Icon(
+                        Icons.phone_outlined,
+                        size: 16,
+                        color: Colors.black87,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         phone!,
@@ -681,10 +680,15 @@ class _CustomerContactBar extends StatelessWidget {
                     ],
                   ),
                 if (email != null && email!.isNotEmpty) ...[
-                  if (phone != null && phone!.isNotEmpty) const SizedBox(height: 6),
+                  if (phone != null && phone!.isNotEmpty)
+                    const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.email_outlined, size: 16, color: Colors.grey),
+                      const Icon(
+                        Icons.email_outlined,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -714,8 +718,13 @@ class _CustomerContactBar extends StatelessWidget {
                   foregroundColor: const Color(0xFF2E7D32),
                   side: const BorderSide(color: Color(0xFF2E7D32)),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
@@ -1035,4 +1044,3 @@ BoxDecoration _cardDecoration({Color? borderColor}) {
     ],
   );
 }
-

@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ezer_fresh/src/core/services/product_cache_service.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
 
@@ -6,11 +6,9 @@ class ProductRepository {
   final FirebaseFirestore _firestore;
   final ProductCacheService _cache;
 
-  ProductRepository({
-    FirebaseFirestore? firestore,
-    ProductCacheService? cache,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _cache = cache ?? ProductCacheService();
+  ProductRepository({FirebaseFirestore? firestore, ProductCacheService? cache})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _cache = cache ?? ProductCacheService();
 
   Stream<List<Product>> watchCachedProducts() async* {
     final cached = await _cache.read();
@@ -63,10 +61,9 @@ class ProductRepository {
   Future<void> clearCache() => _cache.clear();
 
   Query<Map<String, dynamic>> get _allProductsQuery {
-    return _firestore.collection('products').orderBy(
-          'createdAt',
-          descending: true,
-        );
+    return _firestore
+        .collection('products')
+        .orderBy('createdAt', descending: true);
   }
 
   Future<List<Product>> _getProductsFromFirestore(Source source) async {
@@ -83,9 +80,7 @@ class ProductRepository {
         .toList(growable: false);
   }
 
-  Product? _productFromDocument(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  Product? _productFromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     if (!doc.exists || data == null) return null;
 
