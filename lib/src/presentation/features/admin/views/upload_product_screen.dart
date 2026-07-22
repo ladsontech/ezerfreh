@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -178,6 +178,10 @@ class _UploadProductScreenState extends ConsumerState<UploadProductScreen> {
         data['createdAt'] = FieldValue.serverTimestamp();
         await FirebaseFirestore.instance.collection('products').add(data);
       }
+
+      await ref.read(productRepositoryProvider).clearCache();
+      ref.invalidate(allProductsProvider);
+      ref.invalidate(adminProductsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -513,3 +517,4 @@ class _UploadProductScreenState extends ConsumerState<UploadProductScreen> {
     );
   }
 }
+

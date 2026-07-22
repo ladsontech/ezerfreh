@@ -39,3 +39,7 @@ final productByIdProvider = StreamProvider.family<Product?, String>((ref, id) {
 
   return repository.watchProductById(id);
 });
+Future<List<Product>> refreshProductsCatalog(WidgetRef ref) async {
+  await ref.read(productRepositoryProvider).clearCache();
+  return ref.refresh(allProductsProvider.future);
+}
