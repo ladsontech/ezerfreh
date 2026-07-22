@@ -7,6 +7,7 @@ final productsProvider = StreamProvider.family<List<Product>, String>((
   ref,
   categoryId,
 ) {
+  ref.keepAlive();
   final firestore = FirebaseFirestore.instance;
 
   debugPrint('Fetching products for category: $categoryId');
@@ -25,6 +26,7 @@ final productsProvider = StreamProvider.family<List<Product>, String>((
 });
 
 final allProductsProvider = StreamProvider<List<Product>>((ref) {
+  ref.keepAlive();
   final firestore = FirebaseFirestore.instance;
 
   return firestore
@@ -37,6 +39,7 @@ final allProductsProvider = StreamProvider<List<Product>>((ref) {
 });
 
 final productByIdProvider = StreamProvider.family<Product?, String>((ref, id) {
+  ref.keepAlive();
   return FirebaseFirestore.instance
       .collection('products')
       .doc(id)
