@@ -9,16 +9,27 @@ Stream<List<OrderModel>> _ordersFromQuery(Query query) {
       );
 }
 
+Future<List<OrderModel>> _fetchOrdersFromQuery(Query query) async {
+  try {
+    // Try cached first, fallback to server
+    final snapshot = await query.get(const GetOptions(source: Source.serverAndCache));
+    return snapshot.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
+  } catch (_) {
+    final cached = await query.get(const GetOptions(source: Source.cache));
+    return cached.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
+  }
+}
+
 final adminOrdersProvider = StreamProvider<List<OrderModel>>((ref) {
   return _ordersFromQuery(
     FirebaseFirestore.instance
         .collection('orders')
         .orderBy('createdAt', descending: true)
-        .limit(50),
+        .limit(30),
   );
 });
 
-/// All orders for riders — real-time feed of every order in the system.
+/// All orders for riders — real-time feed of active orders in the system.
 final riderOrdersProvider = adminOrdersProvider;
 
 final customerOrdersProvider = StreamProvider.family<List<OrderModel>, String>((
@@ -30,10 +41,11 @@ final customerOrdersProvider = StreamProvider.family<List<OrderModel>, String>((
         .collection('orders')
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
-        .limit(50),
+        .limit(25),
   );
 });
 
+/// Active orders require real-time streaming
 final activeDeliveryOrdersProvider = StreamProvider<List<OrderModel>>((ref) {
   const activeStatuses = [
     'Processing',
@@ -49,18 +61,20 @@ final activeDeliveryOrdersProvider = StreamProvider<List<OrderModel>>((ref) {
     FirebaseFirestore.instance
         .collection('orders')
         .where('status', whereIn: activeStatuses)
-        .orderBy('createdAt', descending: true),
+        .orderBy('createdAt', descending: true)
+        .limit(30),
   );
 });
 
-final riderHistoryProvider = StreamProvider<List<OrderModel>>((ref) {
+/// Completed rider history loaded with query limit to prevent massive read costs
+final riderHistoryProvider = FutureProvider<List<OrderModel>>((ref) async {
   const completedStatuses = ['Completed', 'Cancelled'];
 
-  return _ordersFromQuery(
+  return _fetchOrdersFromQuery(
     FirebaseFirestore.instance
         .collection('orders')
         .where('status', whereIn: completedStatuses)
         .orderBy('createdAt', descending: true)
-        .limit(50),
+        .limit(25),
   );
 });
