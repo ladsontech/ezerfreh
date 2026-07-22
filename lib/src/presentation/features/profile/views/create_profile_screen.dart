@@ -149,8 +149,8 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       );
 
       if (mounted) {
-        if (Navigator.of(context).canPop()) {
-          Navigator.pop(context);
+        if (context.canPop()) {
+          context.pop();
         } else {
           final role = ref.read(userRoleProvider).value ?? 'customer';
           if (role == 'admin') {

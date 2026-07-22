@@ -1,7 +1,7 @@
 name: ezer_fresh
 description: "A new Flutter project for Ezer Fresh, a fruits and vegetables delivery service."
 publish_to: 'none'
-version: 1.0.7+9
+version: 1.0.9+11
 
 environment:
   sdk: ^3.9.0

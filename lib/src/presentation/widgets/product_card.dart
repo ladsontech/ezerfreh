@@ -16,14 +16,8 @@ class ProductCard extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE5E4DC)),
       ),
       child: InkWell(
         onTap: () => context.push('/product-detail', extra: product),
@@ -45,16 +39,16 @@ class ProductCard extends ConsumerWidget {
             ),
             // Info Section
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Fresh ${product.categoryName ?? "Produce"}',
-                    style: GoogleFonts.lato(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
-                      color: Colors.grey[500],
-                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF7A7F7A),
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -62,13 +56,13 @@ class ProductCard extends ConsumerWidget {
                     product.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lato(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Colors.black87,
+                      color: const Color(0xFF1B3D25),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -81,7 +75,7 @@ class ProductCard extends ConsumerWidget {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'UGX ${product.price.toStringAsFixed(0)}',
-                                style: GoogleFonts.lato(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   color: const Color(0xFF2E7D32),
                                   fontWeight: FontWeight.w900,
@@ -92,10 +86,10 @@ class ProductCard extends ConsumerWidget {
                               product.unit,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lato(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF7A7F7A),
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -112,26 +106,19 @@ class ProductCard extends ConsumerWidget {
                               duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(12)),
                               backgroundColor: const Color(0xFF2E7D32),
                             ),
                           );
                         },
                         child: Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50),
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2E7D32),
+                            shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.add,
-                              color: Colors.white, size: 18),
+                              color: Colors.white, size: 16),
                         ),
                       ),
                     ],

@@ -18,7 +18,7 @@ class HomeScreen extends ConsumerWidget {
     final searchQuery = ref.watch(searchQueryProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
+      backgroundColor: const Color(0xFFFAF9F4),
       body: CustomScrollView(
         slivers: [
           _buildTopBar(context),
@@ -149,7 +149,7 @@ class HomeScreen extends ConsumerWidget {
     return SliverAppBar(
       floating: true,
       pinned: false,
-      backgroundColor: const Color(0xFFF8FAF8),
+      backgroundColor: const Color(0xFFFAF9F4),
       elevation: 0,
       automaticallyImplyLeading: false,
       toolbarHeight: 80,
@@ -168,10 +168,10 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Location',
-                        style: GoogleFonts.lato(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w600,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: const Color(0xFF7A7F7A),
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       Row(
@@ -212,9 +212,9 @@ class HomeScreen extends ConsumerWidget {
                                           displayAddress,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.lato(
-                                            fontSize: 15,
-                                            color: Colors.black87,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 14,
+                                            color: const Color(0xFF1B3D25),
                                             fontWeight: FontWeight.w800,
                                           ),
                                         );
@@ -287,24 +287,18 @@ class HomeScreen extends ConsumerWidget {
             height: 52,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE5E4DC)),
             ),
             child: TextField(
               onChanged: (value) =>
                   ref.read(searchQueryProvider.notifier).query = value,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search vegetables, fruits, etc',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                hintStyle: GoogleFonts.plusJakartaSans(color: const Color(0xFF8A8F8A), fontSize: 14),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF8A8F8A)),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ),
@@ -315,7 +309,7 @@ class HomeScreen extends ConsumerWidget {
           width: 52,
           decoration: BoxDecoration(
             color: const Color(0xFF2E7D32),
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: const Icon(Icons.tune, color: Colors.white),
         ),
@@ -333,10 +327,10 @@ class HomeScreen extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.lato(
+          style: GoogleFonts.plusJakartaSans(
             fontSize: 18,
             fontWeight: FontWeight.w900,
-            color: Colors.black87,
+            color: const Color(0xFF1B3D25),
           ),
         ),
         if (onSeeAll != null)
@@ -344,7 +338,7 @@ class HomeScreen extends ConsumerWidget {
             onPressed: onSeeAll,
             child: Text(
               'See All',
-              style: GoogleFonts.lato(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 color: const Color(0xFF2E7D32),
                 fontWeight: FontWeight.bold,
@@ -373,9 +367,9 @@ class HomeScreen extends ConsumerWidget {
                   Container(
                     height: 64,
                     width: 64,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
+                    padding: const EdgeInsets.all(14),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF0EEE4),
                       shape: BoxShape.circle,
                     ),
                     child: Image.asset(
@@ -392,10 +386,10 @@ class HomeScreen extends ConsumerWidget {
                     category.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lato(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF4A4E4A),
                     ),
                   ),
                 ],
@@ -529,7 +523,7 @@ class _BannerCarouselState extends State<_BannerCarousel> {
               decoration: BoxDecoration(
                 color: _currentIndex == index
                     ? const Color(0xFF2E7D32)
-                    : Colors.grey[300],
+                    : const Color(0xFFE5E4DC),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

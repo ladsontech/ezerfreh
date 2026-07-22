@@ -12,19 +12,16 @@ class ProductDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFAF9F4),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFAF9F4),
         foregroundColor: Colors.black,
         elevation: 0,
         centerTitle: true,
         title: Text(
           product.name,
-          style: GoogleFonts.lato(fontWeight: FontWeight.bold, fontSize: 18),
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -37,19 +34,24 @@ class ProductDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image now clearly below the App Bar
                 Hero(
                   tag: 'product-${product.id}',
                   child: AspectRatio(
                     aspectRatio: 1.3,
-                    child: SizedBox(
-                      width: double.infinity,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFE5E4DC)),
+                      ),
+                      clipBehavior: Clip.antiAlias,
                       child: _buildProductImage(),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -59,9 +61,10 @@ class ProductDetailScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               product.name,
-                              style: GoogleFonts.lato(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w900,
+                                color: const Color(0xFF1B3D25),
                               ),
                             ),
                           ),
@@ -70,7 +73,7 @@ class ProductDetailScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 'UGX ${product.price.toStringAsFixed(0)}',
-                                style: GoogleFonts.lato(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
                                   color: const Color(0xFF2E7D32),
@@ -78,9 +81,9 @@ class ProductDetailScreen extends ConsumerWidget {
                               ),
                               Text(
                                 product.unit,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  color: const Color(0xFF7A7F7A),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -88,30 +91,31 @@ class ProductDetailScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
-                        'Local Fresh Produce',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.primary,
+                        'Local Organic Fresh Produce',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: const Color(0xFF2E7D32),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'Description',
-                        style: GoogleFonts.lato(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
+                          color: const Color(0xFF1B3D25),
                         ),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         product.description,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
                           height: 1.6,
-                          color: Colors.black87,
+                          color: const Color(0xFF4A4E4A),
                         ),
                       ),
                       const SizedBox(height: 40),
@@ -139,35 +143,33 @@ class ProductDetailScreen extends ConsumerWidget {
   Widget _buildProductImage() {
     final url = product.imageUrl.trim();
 
-    // Empty or default asset fallback
     if (url.isEmpty) {
       return Container(
-        color: Colors.grey[200],
+        color: const Color(0xFFF0EEE4),
         child: const Center(
           child: Icon(
             Icons.shopping_basket_outlined,
-            size: 100,
-            color: Colors.grey,
+            size: 80,
+            color: Color(0xFFB5B9B5),
           ),
         ),
       );
     }
 
-    // Network images (Firebase Storage download URLs)
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return CachedNetworkImage(
         imageUrl: url,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
-          color: Colors.grey[200],
+          color: const Color(0xFFF0EEE4),
           child: const Center(
             child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
           ),
         ),
         errorWidget: (context, url, error) => Container(
-          color: Colors.grey[200],
+          color: const Color(0xFFF0EEE4),
           child: const Center(
-            child: Icon(Icons.broken_image, size: 100, color: Colors.grey),
+            child: Icon(Icons.broken_image, size: 80, color: Color(0xFFB5B9B5)),
           ),
         ),
       );
@@ -184,20 +186,25 @@ class ProductDetailScreen extends ConsumerWidget {
         onPressed: () {
           ref.read(cartProvider.notifier).addItem(product);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${product.name} added to cart!')),
+            SnackBar(
+              content: Text('${product.name} added to cart!'),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: const Color(0xFF2E7D32),
+            ),
           );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2E7D32),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           elevation: 0,
         ),
-        child: const Text(
+        child: Text(
           'Add to Cart',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );

@@ -92,12 +92,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         phoneNumber: formattedPhone,
         verificationCompleted: (PhoneAuthCredential credential) async {
           try {
-            await ref.read(authServiceProvider).signInWithPhoneCredential(credential);
-          } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Auto-sign in failed: $e')),
+              setState(() {
+                _isLoading = true;
+                _isVerifyingOtp = true;
+                if (credential.smsCode != null && credential.smsCode!.isNotEmpty) {
+                  _otpController.text = credential.smsCode!;
+                }
+              });
+            }
+            
+            // On Android, credential passed by auto-retrieval / instant verification in verificationCompleted 
+            // often has a null verificationId, causing firebase_auth pigeon platform interface to throw a channel-error.
+            // We reconstruct credential using the stored _verificationId if missing.
+            PhoneAuthCredential authCredential = credential;
+            final code = credential.smsCode ?? _otpController.text.trim();
+            if ((credential.verificationId == null || credential.verificationId!.isEmpty) &&
+                _verificationId.isNotEmpty &&
+                code.isNotEmpty) {
+              authCredential = PhoneAuthProvider.credential(
+                verificationId: _verificationId,
+                smsCode: code,
               );
+            }
+
+            final userCredential = await ref.read(authServiceProvider).signInWithPhoneCredential(authCredential);
+            
+            // Create user profile if it's a new user (same as manual OTP verification flow)
+            if (userCredential.user != null) {
+              final firestoreService = ref.read(firestoreServiceProvider);
+              final userDoc = await firestoreService.getUserProfileDoc(userCredential.user!.uid);
+              
+              if (!userDoc.exists) {
+                await firestoreService.setUserProfile(userCredential.user!.uid, {
+                  'uid': userCredential.user!.uid,
+                  'name': 'Customer',
+                  'contact': formattedPhone,
+                  'role': 'customer',
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+              }
+            }
+          } catch (e) {
+            debugPrint('Auto-sign in failed: $e');
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _isVerifyingOtp = false;
+              });
+              // If auto-sign in fails but we have a valid 6-digit OTP code in the input box,
+              // automatically attempt _verifyOtp() so sign-in succeeds seamlessly.
+              if (_otpController.text.trim().length == 6) {
+                _verifyOtp();
+              }
             }
           }
         },
@@ -162,10 +209,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final userDoc = await firestoreService.getUserProfileDoc(userCredential.user!.uid);
         
         if (!userDoc.exists) {
+          String formattedPhone = _phoneController.text.trim();
+          if (!formattedPhone.startsWith('+')) {
+            if (formattedPhone.startsWith('0')) {
+              formattedPhone = '+256${formattedPhone.substring(1)}';
+            } else {
+              formattedPhone = '+256$formattedPhone';
+            }
+          }
+
           await firestoreService.setUserProfile(userCredential.user!.uid, {
             'uid': userCredential.user!.uid,
             'name': 'Customer',
-            'contact': _phoneController.text.trim(),
+            'contact': formattedPhone,
             'role': 'customer',
             'createdAt': FieldValue.serverTimestamp(),
           });

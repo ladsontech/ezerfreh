@@ -14,6 +14,30 @@
       },
       "oauth_client": [
         {
+          "client_id": "562553165879-e4jjq3b0bkqo8bujnglh8f1ku5tv961s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ezerfresh.app",
+            "certificate_hash": "9d817b976866a97ae0ef76958af26c284c4a6c87"
+          }
+        },
+        {
+          "client_id": "562553165879-ikllplon6r3gvcotm5n32v8432qgq3cg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ezerfresh.app",
+            "certificate_hash": "0a1f78ec3bdeb9acc7311eb92c5de0621843268b"
+          }
+        },
+        {
+          "client_id": "562553165879-in36jvj7atlenh72oji3j1cp23er9oov.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ezerfresh.app",
+            "certificate_hash": "43f2ee61390a407e7271f73b28722108db14b9d4"
+          }
+        },
+        {
           "client_id": "562553165879-437mcgqcp3tadn1s40viknqm20mg5tvj.apps.googleusercontent.com",
           "client_type": 3
         }

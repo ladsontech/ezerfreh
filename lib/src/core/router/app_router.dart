@@ -112,7 +112,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         }
         return null;
       } else {
-        if (loc == '/create-profile') {
+        // Allow editing profile when ?edit=true is passed
+        final isEditMode = state.uri.queryParameters['edit'] == 'true';
+        if (loc == '/create-profile' && !isEditMode) {
           final role = roleState.value ?? 'customer';
           if (role == 'admin') return '/admin';
           if (role == 'rider') return '/rider';

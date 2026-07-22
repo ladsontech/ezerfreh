@@ -33,7 +33,7 @@ class ProfileScreen extends ConsumerWidget {
         return _ProfileContent(
           data: data,
           authEmail: user.email,
-          onEdit: () => context.push('/create-profile'),
+          onEdit: () => context.push('/create-profile?edit=true'),
           onSignOut: () => _signOut(context, ref),
           onDelete: () => _showDeleteAccountDialog(context),
         );
