@@ -65,59 +65,70 @@ class ProductListScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: productsAsyncValue.when(
-                  data: (products) {
-                    final filteredProducts = products.where((p) {
-                      return p.name
-                              .toLowerCase()
-                              .contains(searchQuery.toLowerCase()) ||
-                          p.description
-                              .toLowerCase()
-                              .contains(searchQuery.toLowerCase());
-                    }).toList();
-
-                    if (filteredProducts.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.inventory_2_outlined,
-                                size: 64, color: Colors.grey[300]),
-                            const SizedBox(height: 16),
-                            Text(
-                              searchQuery.isEmpty
-                                  ? 'No products found'
-                                  : 'No matches for "$searchQuery"',
-                              style: GoogleFonts.lato(
-                                  color: Colors.grey[600], fontSize: 16),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return GridView.builder(
-                      padding: EdgeInsets.fromLTRB(
-                        16.0,
-                        16.0,
-                        16.0,
-                        ref.watch(cartProvider).isNotEmpty ? 88.0 : 16.0,
-                      ),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16.0,
-                        mainAxisSpacing: 16.0,
-                        childAspectRatio: 0.68,
-                      ),
-                      itemCount: filteredProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = filteredProducts[index];
-                        return ProductCard(product: product);
-                      },
-                    );
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await refreshProductsCatalog(ref);
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stackTrace) =>
-                      Center(child: Text('Error: $error')),
+                  child: productsAsyncValue.when(
+                    data: (products) {
+                      final filteredProducts = products.where((p) {
+                        return p.name
+                                .toLowerCase()
+                                .contains(searchQuery.toLowerCase()) ||
+                            p.description
+                                .toLowerCase()
+                                .contains(searchQuery.toLowerCase());
+                      }).toList();
+
+                      if (filteredProducts.isEmpty) {
+                        return SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Container(
+                            height: MediaQuery.of(context).size.height * 0.5,
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.inventory_2_outlined,
+                                    size: 64, color: Colors.grey[300]),
+                                const SizedBox(height: 16),
+                                Text(
+                                  searchQuery.isEmpty
+                                      ? 'No products found'
+                                      : 'No matches for "$searchQuery"',
+                                  style: GoogleFonts.lato(
+                                      color: Colors.grey[600], fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      return GridView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(
+                          16.0,
+                          16.0,
+                          16.0,
+                          ref.watch(cartProvider).isNotEmpty ? 88.0 : 16.0,
+                        ),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16.0,
+                          mainAxisSpacing: 16.0,
+                          childAspectRatio: 0.68,
+                        ),
+                        itemCount: filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = filteredProducts[index];
+                          return ProductCard(product: product);
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) =>
+                        Center(child: Text('Error: $error')),
+                  ),
                 ),
               ),
             ],
@@ -133,4 +144,3 @@ class ProductListScreen extends ConsumerWidget {
     );
   }
 }
-

@@ -21,7 +21,7 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFFFAF9F4),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(allProductsProvider);
+          await refreshProductsCatalog(ref);
           ref.invalidate(categoriesProvider);
         },
         child: CustomScrollView(
