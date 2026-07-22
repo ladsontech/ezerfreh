@@ -83,9 +83,10 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ],
-        ),
+        ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSearchResults(
