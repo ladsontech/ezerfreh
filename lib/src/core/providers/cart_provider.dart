@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:ezer_fresh/src/core/services/local_cache_service.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
 import 'package:flutter/foundation.dart';
