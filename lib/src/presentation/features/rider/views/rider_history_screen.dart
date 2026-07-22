@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
@@ -35,7 +35,7 @@ class RiderHistoryScreen extends ConsumerWidget {
           color: const Color(0xFF00B894),
           onRefresh: () async {
             ref.invalidate(riderHistoryProvider);
-            ref.invalidate(allProductsProvider);
+            await refreshProductsCatalog(ref);
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -511,3 +511,4 @@ BoxDecoration _cardDecoration({Color? borderColor}) {
     ],
   );
 }
+

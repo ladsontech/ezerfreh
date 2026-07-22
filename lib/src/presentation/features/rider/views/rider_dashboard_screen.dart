@@ -1,4 +1,4 @@
-import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+﻿import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/data/services/order_service.dart';
@@ -60,7 +60,7 @@ class _RiderDashboardScreenState extends ConsumerState<RiderDashboardScreen> {
           color: const Color(0xFF00B894),
           onRefresh: () async {
             ref.invalidate(riderOrdersProvider);
-            ref.invalidate(allProductsProvider);
+            await refreshProductsCatalog(ref);
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -435,7 +435,7 @@ class _RiderOrderCardState extends ConsumerState<_RiderOrderCard> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${order.shortId} · ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
+                      '${order.shortId} Â· ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1035,3 +1035,4 @@ BoxDecoration _cardDecoration({Color? borderColor}) {
     ],
   );
 }
+
