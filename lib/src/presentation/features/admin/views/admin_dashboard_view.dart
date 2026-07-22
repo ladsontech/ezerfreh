@@ -1,4 +1,4 @@
-import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+﻿import 'package:ezer_fresh/src/core/providers/order_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/core/providers/user_provider.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
@@ -14,7 +14,7 @@ class AdminOverviewTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final productsAsync = ref.watch(allProductsProvider);
+    final productsAsync = ref.watch(adminProductsProvider);
     final ordersAsync = ref.watch(adminOrdersProvider);
     final usersAsync = ref.watch(allUsersProvider);
 
@@ -45,7 +45,7 @@ class AdminOverviewTab extends ConsumerWidget {
     return RefreshIndicator(
       color: const Color(0xFF2E7D32),
       onRefresh: () async {
-        ref.invalidate(allProductsProvider);
+        ref.invalidate(adminProductsProvider);
         ref.invalidate(adminOrdersProvider);
         ref.invalidate(allUsersProvider);
       },
@@ -672,7 +672,7 @@ class _RecentOrderRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${order.shortId} · ${order.totalItems} items · ${DateFormat.MMMd().add_jm().format(order.createdAt)}',
+                      '${order.shortId} Â· ${order.totalItems} items Â· ${DateFormat.MMMd().add_jm().format(order.createdAt)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -790,3 +790,4 @@ BoxDecoration _panelDecoration({Color? borderColor}) {
     ],
   );
 }
+

@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
@@ -31,7 +31,7 @@ class _AdminProductsListScreenState
 
   @override
   Widget build(BuildContext context) {
-    final productsAsyncValue = ref.watch(allProductsProvider);
+    final productsAsyncValue = ref.watch(adminProductsProvider);
 
     Widget content = productsAsyncValue.when(
       data: (products) {
@@ -360,13 +360,13 @@ class _ProductNameCell extends StatelessWidget {
   }
 }
 
-class _ProductActions extends StatelessWidget {
+class _ProductActions extends ConsumerWidget {
   final Product product;
 
   const _ProductActions({required this.product});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -383,7 +383,7 @@ class _ProductActions extends StatelessWidget {
         Tooltip(
           message: 'Delete product',
           child: IconButton(
-            onPressed: () => _confirmDelete(context, product),
+            onPressed: () => _confirmDelete(context, ref, product),
             icon: const Icon(Icons.delete_outline, color: Colors.red),
           ),
         ),
@@ -391,7 +391,11 @@ class _ProductActions extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, Product product) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -417,6 +421,9 @@ class _ProductActions extends StatelessWidget {
         .collection('products')
         .doc(product.id)
         .delete();
+    await ref.read(productRepositoryProvider).clearCache();
+    ref.invalidate(allProductsProvider);
+    ref.invalidate(adminProductsProvider);
     if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -464,3 +471,4 @@ class _ProductImageFallback extends StatelessWidget {
     );
   }
 }
+
