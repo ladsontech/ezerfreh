@@ -7,8 +7,16 @@ class FirestoreService {
     return _firestore.collection('users').doc(uid).snapshots();
   }
 
-  Future<DocumentSnapshot> getUserProfileDoc(String uid) {
-    return _firestore.collection('users').doc(uid).get();
+  Future<DocumentSnapshot> getUserProfileDoc(String uid, {bool cacheFirst = true}) async {
+    if (cacheFirst) {
+      try {
+        final cachedDoc = await _firestore.collection('users').doc(uid).get(const GetOptions(source: Source.cache));
+        if (cachedDoc.exists) return cachedDoc;
+      } catch (_) {
+        // Fallback to server if cache missed or failed
+      }
+    }
+    return _firestore.collection('users').doc(uid).get(const GetOptions(source: Source.serverAndCache));
   }
 
   Future<void> setUserProfile(String uid, Map<String, dynamic> data) {

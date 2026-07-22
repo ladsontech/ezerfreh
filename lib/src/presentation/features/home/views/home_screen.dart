@@ -19,8 +19,13 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9F4),
-      body: CustomScrollView(
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(allProductsProvider);
+          ref.invalidate(categoriesProvider);
+        },
+        child: CustomScrollView(
+          slivers: [
           _buildTopBar(context),
           SliverToBoxAdapter(
             child: Padding(
@@ -78,7 +83,7 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

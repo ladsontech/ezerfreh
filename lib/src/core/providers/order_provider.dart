@@ -13,7 +13,8 @@ final adminOrdersProvider = StreamProvider<List<OrderModel>>((ref) {
   return _ordersFromQuery(
     FirebaseFirestore.instance
         .collection('orders')
-        .orderBy('createdAt', descending: true),
+        .orderBy('createdAt', descending: true)
+        .limit(50),
   );
 });
 
@@ -28,7 +29,8 @@ final customerOrdersProvider = StreamProvider.family<List<OrderModel>, String>((
     FirebaseFirestore.instance
         .collection('orders')
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true),
+        .orderBy('createdAt', descending: true)
+        .limit(50),
   );
 });
 
