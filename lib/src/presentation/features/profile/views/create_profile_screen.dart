@@ -210,7 +210,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                   _buildTextField(
                     controller: _addressController,
                     label: 'Delivery Address',
-                    hint: 'Select from map',
+                    hint: 'Search address or use current location',
                     icon: Icons.location_on_outlined,
                     readOnly: true,
                     onTap: _openLocationPicker,

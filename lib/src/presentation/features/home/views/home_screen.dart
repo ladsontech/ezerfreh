@@ -134,7 +134,7 @@ class HomeScreen extends ConsumerWidget {
               crossAxisCount: 2,
               crossAxisSpacing: 16.0,
               mainAxisSpacing: 16.0,
-              childAspectRatio: 0.68,
+              childAspectRatio: 0.64,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) => ProductCard(product: filtered[index]),
@@ -429,7 +429,7 @@ class HomeScreen extends ConsumerWidget {
               crossAxisCount: ResponsiveLayout.isDesktop(context) ? 4 : 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 0.68,
+              childAspectRatio: 0.64,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) => ProductCard(product: products[index]),

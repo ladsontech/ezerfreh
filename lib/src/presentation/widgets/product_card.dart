@@ -27,7 +27,7 @@ class ProductCard extends ConsumerWidget {
           children: [
             // Responsive Landscape Image Section
             AspectRatio(
-              aspectRatio: 1.45,
+              aspectRatio: 1.25,
               child: Container(
                 padding: const EdgeInsets.all(10),
                 width: double.infinity,
@@ -106,7 +106,8 @@ class ProductCard extends ConsumerWidget {
                               duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               backgroundColor: const Color(0xFF2E7D32),
                             ),
                           );
@@ -117,8 +118,11 @@ class ProductCard extends ConsumerWidget {
                             color: Color(0xFF2E7D32),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.add,
-                              color: Colors.white, size: 16),
+                          child: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ],
@@ -188,4 +192,3 @@ class ProductCard extends ConsumerWidget {
     );
   }
 }
-

@@ -128,7 +128,7 @@ class ProductListScreen extends ConsumerWidget {
                               crossAxisCount: 2,
                               crossAxisSpacing: 16.0,
                               mainAxisSpacing: 16.0,
-                              childAspectRatio: 0.68,
+                              childAspectRatio: 0.64,
                             ),
                         itemCount: filteredProducts.length,
                         itemBuilder: (context, index) {

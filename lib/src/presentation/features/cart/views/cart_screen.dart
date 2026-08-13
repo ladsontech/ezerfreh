@@ -25,7 +25,7 @@ class CartScreen extends ConsumerWidget {
           ],
         ),
         content: const Text(
-          'Please complete your profile and select a delivery location on the map before checking out.',
+          'Please complete your profile and set a delivery location before checking out.',
         ),
         actions: [
           TextButton(
