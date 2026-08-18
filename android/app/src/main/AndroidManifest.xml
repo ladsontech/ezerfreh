@@ -15,7 +15,19 @@
         android:icon="@mipmap/ic_launcher">
         
         <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDjY0hr4rZtwPas_LAxBbvIBNeL41a5AKQ"/>
+            android:value="AIzaSyDc_fnt5-ONpX32mhCHK0nIGE0aNCADVVI"/>
+
+        <!-- Ensures background/terminated FCM notifications land on the same
+             "default" channel our Dart code creates and the Cloud Functions
+             (functions/index.js) target, and use a proper status-bar icon
+             instead of the full-color launcher icon. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="default" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

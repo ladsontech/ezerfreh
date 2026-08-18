@@ -31,6 +31,16 @@ class AuthService {
   }
 
   Future<UserCredential?> signInWithGoogle() async {
+    if (kIsWeb) {
+      // `google_sign_in` v7's `authenticate()` call requires a rendered
+      // Google Identity Services button on web (and a web OAuth client id
+      // this app never configured) — it doesn't work as a plain button
+      // tap. Firebase Auth's own popup flow bridges straight to the
+      // Firebase JS SDK, reuses the Google provider already enabled for
+      // this Firebase project, and needs no extra web-side setup.
+      return _firebaseAuth.signInWithPopup(GoogleAuthProvider());
+    }
+
     await GoogleSignIn.instance.initialize();
     final googleUser = await GoogleSignIn.instance.authenticate();
 
@@ -70,11 +80,13 @@ class AuthService {
     } catch (e) {
       debugPrint('Error unregistering notification token: $e');
     }
-    try {
-      await GoogleSignIn.instance.initialize();
-      await GoogleSignIn.instance.signOut();
-    } catch (e) {
-      debugPrint('Error signing out Google: $e');
+    if (!kIsWeb) {
+      try {
+        await GoogleSignIn.instance.initialize();
+        await GoogleSignIn.instance.signOut();
+      } catch (e) {
+        debugPrint('Error signing out Google: $e');
+      }
     }
     return _firebaseAuth.signOut();
   }

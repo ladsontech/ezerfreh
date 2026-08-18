@@ -41,7 +41,12 @@ class ScaffoldWithNestedNavigation extends ConsumerWidget {
             left: isWide ? 20 : 16,
             right: isWide ? 20 : 16,
             bottom: isWide ? 20 : 84,
-            child: const StickyCartBar(bottomOffset: 0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: const StickyCartBar(bottomOffset: 0),
+              ),
+            ),
           ),
         ],
       );

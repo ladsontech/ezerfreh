@@ -25,3 +25,27 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(title, options);
 });
+
+// Clicking a background notification should bring the app to the front
+// rather than doing nothing. If a tab is already open we focus it (so the
+// user doesn't end up with duplicate tabs of the app); otherwise we open
+// one. This mirrors the tap-to-open behaviour the Android build gets from
+// FirebaseMessaging.onMessageOpenedApp.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        for (const client of windowClients) {
+          if ('focus' in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow('/');
+        }
+      }),
+  );
+});

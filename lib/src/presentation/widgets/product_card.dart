@@ -25,9 +25,16 @@ class ProductCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Responsive Landscape Image Section
-            AspectRatio(
-              aspectRatio: 1.25,
+            // The image takes whatever vertical space the text block below
+            // doesn't need. Using Expanded rather than a fixed AspectRatio
+            // means this card can never overflow its grid cell: when the
+            // user's system font scale grows, the text block gets taller
+            // and the image simply gives up those pixels. A fixed ratio
+            // instead forced a set height and burst the card, which is what
+            // produced the "RenderFlex overflowed by N pixels" errors.
+            // In practice the grid's childAspectRatio leaves this close to
+            // square, which is what keeps photos from looking cropped.
+            Expanded(
               child: Container(
                 padding: const EdgeInsets.all(10),
                 width: double.infinity,
@@ -45,6 +52,11 @@ class ProductCard extends ConsumerWidget {
                 children: [
                   Text(
                     'Fresh ${product.categoryName ?? "Produce"}',
+                    // Pinned to one line: a long category name wrapping to
+                    // two lines was another way this card could outgrow its
+                    // cell.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
                       color: const Color(0xFF7A7F7A),
@@ -98,19 +110,12 @@ class ProductCard extends ConsumerWidget {
                       const SizedBox(width: 4),
                       // Add to Cart Button
                       GestureDetector(
+                        // No confirmation snackbar here on purpose: the cart
+                        // badge in the nav bar and the sticky cart bar both
+                        // update instantly, so a popup per tap is just noise
+                        // when adding several items in a row.
                         onTap: () {
                           ref.read(cartProvider.notifier).addItem(product);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${product.name} added to cart'),
-                              duration: const Duration(seconds: 1),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: const Color(0xFF2E7D32),
-                            ),
-                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.all(6),

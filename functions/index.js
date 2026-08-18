@@ -43,7 +43,7 @@ exports.notifyStaffOnOrderCreated = onDocumentCreated(
     const adminBody = `A new order has been placed${total ? ` for ${total}` : ''}.`;
     const riderBody = `A new order is in the queue and is ${status.toLowerCase()}.`;
 
-    await Promise.all([
+    const tasks = [
       sendToRoles(adminRoles, {
         notification: {
           title: 'New order placed',
@@ -66,7 +66,30 @@ exports.notifyStaffOnOrderCreated = onDocumentCreated(
           status,
         },
       }),
-    ]);
+    ];
+
+    // Confirm the order back to the customer who placed it. Previously only
+    // staff were notified on creation, so the customer received nothing at
+    // checkout and had to wait until an admin changed the status.
+    if (order.userId) {
+      tasks.push(
+        sendToUser(order.userId, {
+          notification: {
+            title: 'Order placed successfully',
+            body: `Thanks! We've received your order ${shortOrderId(orderId)}${
+              total ? ` for ${total}` : ''
+            } and it is being confirmed.`,
+          },
+          data: {
+            type: 'order_created',
+            orderId,
+            status,
+          },
+        }),
+      );
+    }
+
+    await Promise.all(tasks);
   },
 );
 

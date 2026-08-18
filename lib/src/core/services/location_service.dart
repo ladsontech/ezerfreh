@@ -18,15 +18,24 @@ class PlaceSuggestion {
     required this.secondaryText,
   });
 
-  factory PlaceSuggestion.fromJson(Map<String, dynamic> json) {
-    final formatting =
-        json['structured_formatting'] as Map<String, dynamic>? ?? {};
-    final description = json['description'] as String? ?? '';
+  // Parses one entry from the Places API (New) autocomplete response:
+  // { "suggestions": [ { "placePrediction": { "placeId", "text": {"text"},
+  //   "structuredFormat": {"mainText": {"text"}, "secondaryText": {"text"}} } } ] }
+  factory PlaceSuggestion.fromPrediction(Map<String, dynamic> json) {
+    final prediction =
+        json['placePrediction'] as Map<String, dynamic>? ?? {};
+    final text = prediction['text'] as Map<String, dynamic>? ?? {};
+    final structured =
+        prediction['structuredFormat'] as Map<String, dynamic>? ?? {};
+    final mainText = structured['mainText'] as Map<String, dynamic>? ?? {};
+    final secondaryText =
+        structured['secondaryText'] as Map<String, dynamic>? ?? {};
+    final description = text['text'] as String? ?? '';
     return PlaceSuggestion(
-      placeId: json['place_id'] as String? ?? '',
+      placeId: prediction['placeId'] as String? ?? '',
       description: description,
-      mainText: formatting['main_text'] as String? ?? description,
-      secondaryText: formatting['secondary_text'] as String? ?? '',
+      mainText: mainText['text'] as String? ?? description,
+      secondaryText: secondaryText['text'] as String? ?? '',
     );
   }
 }
@@ -46,8 +55,35 @@ class PlaceDetails {
 class LocationService {
   static const String _googleMapsApiKey = String.fromEnvironment(
     'GOOGLE_MAPS_API_KEY',
-    defaultValue: 'AIzaSyDjY0hr4rZtwPas_LAxBbvIBNeL41a5AKQ',
+    defaultValue: 'AIzaSyDc_fnt5-ONpX32mhCHK0nIGE0aNCADVVI',
   );
+
+  /// Cleans up an address before it's shown or saved.
+  ///
+  /// Reverse-geocoding and the Places API both return strings with empty
+  /// segments whenever a field is missing for that spot — things like
+  /// "Ntinda, , Kampala, , Uganda" — which render in the UI as stray
+  /// commas floating with nothing between them. This drops the blank
+  /// segments, collapses runs of whitespace, and removes back-to-back
+  /// duplicates ("Kampala, Kampala" from areas where the sub-locality and
+  /// locality are reported the same).
+  static String tidyAddress(String raw) {
+    final segments = raw
+        .split(',')
+        .map((segment) => segment.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((segment) => segment.isNotEmpty && segment != '-')
+        .toList();
+
+    final deduped = <String>[];
+    for (final segment in segments) {
+      if (deduped.isEmpty ||
+          deduped.last.toLowerCase() != segment.toLowerCase()) {
+        deduped.add(segment);
+      }
+    }
+
+    return deduped.join(', ');
+  }
 
   Future<Position> getCurrentLocation() async {
     bool serviceEnabled;
@@ -76,46 +112,62 @@ class LocationService {
     return Geolocator.getCurrentPosition();
   }
 
+  // Uses Places API (New) — the legacy Places Autocomplete/Details JSON
+  // endpoints under maps.googleapis.com/maps/api/place/* return
+  // REQUEST_DENIED for any project where only "Places API (New)" is
+  // enabled, which is what was silently breaking every search here.
+  // Make sure "Places API (New)" is enabled for this API key's project in
+  // Google Cloud Console (APIs & Services > Library).
   Future<List<PlaceSuggestion>> searchPlaces(
     String input, {
     String? sessionToken,
+    double? latitude,
+    double? longitude,
+    int radiusMeters = 50000,
   }) async {
     final query = input.trim();
     if (query.length < 2) return const [];
 
-    final params = <String, String>{
+    final requestBody = <String, dynamic>{
       'input': query,
-      'key': _googleMapsApiKey,
-      'components': 'country:ug',
+      'includedRegionCodes': ['ug'],
     };
     if (sessionToken != null && sessionToken.isNotEmpty) {
-      params['sessiontoken'] = sessionToken;
+      requestBody['sessionToken'] = sessionToken;
+    }
+    if (latitude != null && longitude != null) {
+      requestBody['locationBias'] = {
+        'circle': {
+          'center': {'latitude': latitude, 'longitude': longitude},
+          'radius': radiusMeters.toDouble(),
+        },
+      };
     }
 
-    final uri = Uri.https(
-      'maps.googleapis.com',
-      '/maps/api/place/autocomplete/json',
-      params,
+    final uri = Uri.https('places.googleapis.com', '/v1/places:autocomplete');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': _googleMapsApiKey,
+      },
+      body: jsonEncode(requestBody),
     );
-    final response = await http.get(uri);
+
     if (response.statusCode != 200) {
+      debugPrint(
+        'Places autocomplete failed: ${response.statusCode} ${response.body}',
+      );
       throw Exception('Could not search places. Please try again.');
     }
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final status = body['status'] as String? ?? 'UNKNOWN';
-    if (status == 'ZERO_RESULTS') return const [];
-    if (status != 'OK') {
-      final error = body['error_message'] as String? ?? '';
-      debugPrint('Places autocomplete failed: $status $error');
-      throw Exception('Place search is not available right now.');
-    }
-
-    final predictions = body['predictions'] as List<dynamic>? ?? const [];
-    return predictions
+    final suggestions = body['suggestions'] as List<dynamic>? ?? const [];
+    return suggestions
         .map(
-          (prediction) =>
-              PlaceSuggestion.fromJson(prediction as Map<String, dynamic>),
+          (suggestion) => PlaceSuggestion.fromPrediction(
+            suggestion as Map<String, dynamic>,
+          ),
         )
         .where((suggestion) => suggestion.placeId.isNotEmpty)
         .toList();
@@ -127,46 +179,47 @@ class LocationService {
   }) async {
     if (placeId.isEmpty) return null;
 
-    final params = <String, String>{
-      'place_id': placeId,
-      'fields': 'formatted_address,geometry,name',
-      'key': _googleMapsApiKey,
-    };
+    final params = <String, String>{};
     if (sessionToken != null && sessionToken.isNotEmpty) {
-      params['sessiontoken'] = sessionToken;
+      params['sessionToken'] = sessionToken;
     }
 
     final uri = Uri.https(
-      'maps.googleapis.com',
-      '/maps/api/place/details/json',
-      params,
+      'places.googleapis.com',
+      '/v1/places/$placeId',
+      params.isEmpty ? null : params,
     );
-    final response = await http.get(uri);
-    if (response.statusCode != 200) {
-      throw Exception('Could not load place details. Please try again.');
-    }
+    final response = await http.get(
+      uri,
+      headers: {
+        'X-Goog-Api-Key': _googleMapsApiKey,
+        'X-Goog-FieldMask': 'id,formattedAddress,location,displayName',
+      },
+    );
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final status = body['status'] as String? ?? 'UNKNOWN';
-    if (status != 'OK') {
-      final error = body['error_message'] as String? ?? '';
-      debugPrint('Place details failed: $status $error');
+    if (response.statusCode != 200) {
+      debugPrint(
+        'Place details failed: ${response.statusCode} ${response.body}',
+      );
       return null;
     }
 
-    final result = body['result'] as Map<String, dynamic>? ?? {};
-    final geometry = result['geometry'] as Map<String, dynamic>? ?? {};
-    final location = geometry['location'] as Map<String, dynamic>? ?? {};
-    final latitude = (location['lat'] as num?)?.toDouble();
-    final longitude = (location['lng'] as num?)?.toDouble();
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+    final location = result['location'] as Map<String, dynamic>? ?? {};
+    final latitude = (location['latitude'] as num?)?.toDouble();
+    final longitude = (location['longitude'] as num?)?.toDouble();
     if (latitude == null || longitude == null) return null;
 
+    final displayName = result['displayName'] as Map<String, dynamic>?;
+    final rawAddress =
+        (result['formattedAddress'] as String?) ??
+        (displayName?['text'] as String?) ??
+        'Selected Location';
+    final address = tidyAddress(rawAddress);
     return PlaceDetails(
       latitude: latitude,
       longitude: longitude,
-      address: (result['formatted_address'] as String?) ??
-          (result['name'] as String?) ??
-          'Selected Location',
+      address: address.isEmpty ? 'Selected Location' : address,
     );
   }
 
@@ -200,7 +253,10 @@ class LocationService {
           place.locality,
           place.country,
         ].whereType<String>().where((part) => part.trim().isNotEmpty);
-        if (parts.isNotEmpty) return parts.join(', ');
+        if (parts.isNotEmpty) {
+          final address = tidyAddress(parts.join(', '));
+          if (address.isNotEmpty) return address;
+        }
       }
     } catch (e) {
       debugPrint('$e');

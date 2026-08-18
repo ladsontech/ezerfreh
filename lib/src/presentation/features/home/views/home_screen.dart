@@ -2,11 +2,14 @@ import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'dart:async';
 import 'package:ezer_fresh/src/core/providers/category_provider.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
+import 'package:ezer_fresh/src/core/services/location_service.dart';
+import 'package:ezer_fresh/src/presentation/widgets/location_picker.dart';
 import 'package:ezer_fresh/src/presentation/widgets/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ezer_fresh/src/presentation/widgets/responsive_layout.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -29,7 +32,7 @@ class HomeScreen extends ConsumerWidget {
             _buildTopBar(context),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: ResponsiveLayout.pagePadding(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -45,7 +48,7 @@ class HomeScreen extends ConsumerWidget {
             else ...[
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: ResponsiveLayout.pagePadding(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -68,7 +71,7 @@ class HomeScreen extends ConsumerWidget {
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: ResponsiveLayout.pagePadding(context),
                   child: _buildSectionHeader(
                     'All Products',
                     () => context.push('/all-products'),
@@ -128,13 +131,15 @@ class HomeScreen extends ConsumerWidget {
         }
 
         return SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: ResponsiveLayout.pagePadding(context),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: ResponsiveLayout.productGridColumns(
+                MediaQuery.sizeOf(context).width,
+              ),
               crossAxisSpacing: 16.0,
               mainAxisSpacing: 16.0,
-              childAspectRatio: 0.64,
+              childAspectRatio: 0.60,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) => ProductCard(product: filtered[index]),
@@ -161,103 +166,13 @@ class HomeScreen extends ConsumerWidget {
       toolbarHeight: 80,
       flexibleSpace: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: ResponsiveLayout.pagePadding(
+            context,
+          ).add(const EdgeInsets.symmetric(vertical: 8.0)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => context.push('/create-profile'),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Location',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          color: const Color(0xFF7A7F7A),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            color: Color(0xFF2E7D32),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Consumer(
-                              builder: (context, ref, child) {
-                                final authAsync = ref.watch(authStateProvider);
-                                return authAsync.when(
-                                  data: (user) {
-                                    if (user == null) {
-                                      return const Text('Select Location');
-                                    }
-                                    final profileAsync = ref.watch(
-                                      userProfileProvider(user.uid),
-                                    );
-                                    return profileAsync.when(
-                                      data: (doc) {
-                                        final data =
-                                            doc.data() as Map<String, dynamic>?;
-                                        final address =
-                                            data?['address'] as String?;
-                                        final suite =
-                                            data?['apartmentSuite'] as String?;
-                                        final displayAddress =
-                                            (address != null &&
-                                                suite != null &&
-                                                suite.isNotEmpty)
-                                            ? '$address ($suite)'
-                                            : (address ?? 'Select Location');
-                                        return Text(
-                                          displayAddress,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 14,
-                                            color: const Color(0xFF1B3D25),
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        );
-                                      },
-                                      loading: () => const SizedBox(
-                                        height: 15,
-                                        width: 15,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      error: (_, __) => const Text('Error'),
-                                    );
-                                  },
-                                  loading: () => const SizedBox(
-                                    height: 15,
-                                    width: 15,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                  error: (_, __) => const Text('Error'),
-                                );
-                              },
-                            ),
-                          ),
-                          const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: Colors.grey,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const Expanded(child: _LocationBar()),
               const SizedBox(width: 16),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -422,18 +337,28 @@ class HomeScreen extends ConsumerWidget {
         if (products.isEmpty) {
           return const SliverToBoxAdapter(child: SizedBox());
         }
+        final columns = ResponsiveLayout.productGridColumns(
+          MediaQuery.sizeOf(context).width,
+        );
         return SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: ResponsiveLayout.pagePadding(context),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: ResponsiveLayout.isDesktop(context) ? 4 : 2,
+              crossAxisCount: columns,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 0.64,
+              // Matches the fix in product_list_screen.dart — ProductCard's
+              // image is now a square, so this needs the same extra
+              // headroom to avoid a bottom overflow.
+              childAspectRatio: 0.60,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) => ProductCard(product: products[index]),
-              childCount: products.length > 4 ? 4 : products.length,
+              // Show one full row on wide/web layouts (more columns) so the
+              // "Flash Sales" preview doesn't look sparse next to "See All".
+              childCount: products.length > columns
+                  ? columns
+                  : products.length,
             ),
           ),
         );
@@ -442,6 +367,202 @@ class HomeScreen extends ConsumerWidget {
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (e, s) => const SliverToBoxAdapter(child: SizedBox()),
+    );
+  }
+}
+
+/// Delivery location shown in the home top bar. Tapping it opens the same
+/// map picker used at checkout and writes the chosen address straight back
+/// to the user's profile, so the address can be changed from the home page
+/// instead of only inside profile settings.
+///
+/// The previous version pushed `/create-profile` with no `?edit=true`, which
+/// the router's redirect bounced straight back to `/home` — so tapping the
+/// location appeared to do nothing at all.
+class _LocationBar extends ConsumerWidget {
+  const _LocationBar();
+
+  Future<void> _editLocation(
+    BuildContext context,
+    WidgetRef ref,
+    String uid,
+    Map<String, dynamic>? profile,
+  ) async {
+    final savedAddress = (profile?['address'] as String?)?.trim() ?? '';
+    final savedSuite = (profile?['apartmentSuite'] as String?)?.trim() ?? '';
+    final savedLat = (profile?['latitude'] as num?)?.toDouble();
+    final savedLng = (profile?['longitude'] as num?)?.toDouble();
+
+    final picked = await showModalBottomSheet<_PickedLocation>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: Container(
+          height: MediaQuery.sizeOf(sheetContext).height * 0.9,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(25),
+              topRight: Radius.circular(25),
+            ),
+          ),
+          child: LocationPicker(
+            initialAddress: savedAddress.isNotEmpty ? savedAddress : null,
+            initialLatLng: (savedLat != null && savedLng != null)
+                ? LatLng(savedLat, savedLng)
+                : null,
+            initialApartmentSuite: savedSuite.isNotEmpty ? savedSuite : null,
+            confirmButtonLabel: 'Save Address',
+            onLocationSelected: (latLng, address, apartmentSuite) {
+              Navigator.of(sheetContext).pop(
+                _PickedLocation(latLng, address, apartmentSuite),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (picked == null) return;
+
+    // Merge onto the existing profile rather than writing only the four
+    // location keys. FirestoreService mirrors whatever map it's handed into
+    // the local cache wholesale, so a partial write would leave a cached
+    // profile with no name/contact/role on it.
+    final merged = Map<String, dynamic>.from(profile ?? <String, dynamic>{})
+      ..['address'] = picked.address
+      ..['apartmentSuite'] = picked.apartmentSuite
+      ..['latitude'] = picked.latLng.latitude
+      ..['longitude'] = picked.latLng.longitude;
+
+    try {
+      await ref.read(firestoreServiceProvider).setUserProfile(uid, merged);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Delivery address updated.')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save address: $error')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider).value;
+
+    // Guests have no profile to save an address onto, so send them to sign
+    // in rather than opening a picker whose result would be discarded.
+    if (user == null) {
+      return _LocationBarShell(
+        value: 'Sign in to set address',
+        onTap: () => context.push('/login'),
+      );
+    }
+
+    final profileAsync = ref.watch(userProfileProvider(user.uid));
+    final profile = profileAsync.value?.data() as Map<String, dynamic>?;
+
+    final address = LocationService.tidyAddress(
+      (profile?['address'] as String?)?.trim() ?? '',
+    );
+    final suite = (profile?['apartmentSuite'] as String?)?.trim() ?? '';
+    final display = address.isEmpty
+        ? 'Set delivery address'
+        : (suite.isEmpty ? address : '$address ($suite)');
+
+    return _LocationBarShell(
+      value: display,
+      loading: profileAsync.isLoading && profile == null,
+      onTap: () => _editLocation(context, ref, user.uid, profile),
+    );
+  }
+}
+
+class _PickedLocation {
+  final LatLng latLng;
+  final String address;
+  final String apartmentSuite;
+
+  const _PickedLocation(this.latLng, this.address, this.apartmentSuite);
+}
+
+class _LocationBarShell extends StatelessWidget {
+  final String value;
+  final bool loading;
+  final VoidCallback onTap;
+
+  const _LocationBarShell({
+    required this.value,
+    required this.onTap,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Location',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                color: const Color(0xFF7A7F7A),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on,
+                  color: Color(0xFF2E7D32),
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: loading
+                      ? const Align(
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(
+                            height: 15,
+                            width: 15,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : Text(
+                          value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            color: const Color(0xFF1B3D25),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                ),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.grey,
+                  size: 20,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:ezer_fresh/src/core/providers/providers.dart';
 import 'package:ezer_fresh/src/core/providers/product_provider.dart';
 import 'package:ezer_fresh/src/domain/models/category_model.dart';
 import 'package:ezer_fresh/src/presentation/widgets/product_card.dart';
+import 'package:ezer_fresh/src/presentation/widgets/responsive_layout.dart';
 import 'package:ezer_fresh/src/presentation/widgets/sticky_cart_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,10 +35,9 @@ class ProductListScreen extends ConsumerWidget {
           Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8,
-                ),
+                padding: ResponsiveLayout.pagePadding(
+                  context,
+                ).add(const EdgeInsets.symmetric(vertical: 8)),
                 child: Container(
                   height: 52,
                   decoration: BoxDecoration(
@@ -115,20 +115,30 @@ class ProductListScreen extends ConsumerWidget {
                           ),
                         );
                       }
+                      final gridPadding = ResponsiveLayout.pagePadding(
+                        context,
+                      );
                       return GridView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: EdgeInsets.fromLTRB(
+                          gridPadding.left,
                           16.0,
-                          16.0,
-                          16.0,
+                          gridPadding.right,
                           ref.watch(cartProvider).isNotEmpty ? 88.0 : 16.0,
                         ),
                         gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount:
+                                  ResponsiveLayout.productGridColumns(
+                                    MediaQuery.sizeOf(context).width,
+                                  ),
                               crossAxisSpacing: 16.0,
                               mainAxisSpacing: 16.0,
-                              childAspectRatio: 0.64,
+                              // 0.60 (was 0.64) — gives the card a bit more
+                              // height than the square image + two-line
+                              // text block strictly needs, so it doesn't
+                              // overflow on larger system font scales.
+                              childAspectRatio: 0.60,
                             ),
                         itemCount: filteredProducts.length,
                         itemBuilder: (context, index) {
@@ -146,11 +156,16 @@ class ProductListScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const Positioned(
+          Positioned(
             left: 16,
             right: 16,
             bottom: 20,
-            child: StickyCartBar(bottomOffset: 0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: const StickyCartBar(bottomOffset: 0),
+              ),
+            ),
           ),
         ],
       ),

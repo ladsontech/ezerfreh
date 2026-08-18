@@ -1,4 +1,5 @@
 import 'package:ezer_fresh/src/core/providers/providers.dart';
+import 'package:ezer_fresh/src/core/router/navigation_keys.dart';
 import 'package:ezer_fresh/src/domain/models/category_model.dart';
 import 'package:ezer_fresh/src/presentation/features/auth/views/login_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/cart/views/cart_screen.dart';
@@ -19,6 +20,7 @@ import 'package:ezer_fresh/src/presentation/features/rider/views/rider_dashboard
 import 'package:ezer_fresh/src/presentation/features/rider/views/rider_history_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/admin/views/upload_product_screen.dart';
 import 'package:ezer_fresh/src/presentation/features/onboarding/views/onboarding_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -42,6 +44,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(routerNotifierProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: notifier,
     redirect: (context, state) {
@@ -57,28 +60,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isOnboardingCompleted = onboardingState.value ?? false;
       final loc = state.matchedLocation;
 
-      // 2. Enforce onboarding first
-      if (!isOnboardingCompleted) {
+      // 2. Enforce onboarding first — except on web, which is a
+      // guest-first, browse-immediately experience. The mobile-app-style
+      // onboarding slideshow doesn't fit a website visitor's expectations,
+      // so web always treats onboarding as already done and lands
+      // straight on the home page. Native apps still show it once.
+      final skipOnboarding = kIsWeb || isOnboardingCompleted;
+      if (!skipOnboarding) {
         if (loc != '/onboarding') {
           return '/onboarding';
         }
         return null;
-      } else {
-        // If onboarding is completed and we're still on /onboarding, go to /
-        if (loc == '/onboarding') {
-          return '/';
-        }
+      } else if (loc == '/onboarding') {
+        // Onboarding already done (or skipped on web) — don't linger there.
+        return '/';
       }
 
       final isAuth = authState.value != null;
 
       // 3. Handle guest (unauthenticated) users
       if (!isAuth) {
-        // Allow list for guests
+        // Allow list for guests. `/cart` is included deliberately: guests
+        // can browse and build a cart freely, and CartScreen itself only
+        // prompts for sign-in at the moment they tap "Checkout" — the
+        // router shouldn't gate them out before that screen ever gets a
+        // chance to show that prompt.
         final allowedGuestRoutes = [
           '/',
           '/login',
           '/home',
+          '/cart',
           '/products',
           '/product-detail',
           '/all-products',

@@ -11,6 +11,9 @@ class LocationPicker extends StatefulWidget {
   final String? initialAddress;
   final LatLng? initialLatLng;
   final String? initialApartmentSuite;
+  final bool useCurrentLocationByDefault;
+  final bool preferCurrentLocation;
+  final String confirmButtonLabel;
 
   const LocationPicker({
     super.key,
@@ -18,6 +21,9 @@ class LocationPicker extends StatefulWidget {
     this.initialAddress,
     this.initialLatLng,
     this.initialApartmentSuite,
+    this.useCurrentLocationByDefault = true,
+    this.preferCurrentLocation = false,
+    this.confirmButtonLabel = 'Confirm Location',
   });
 
   @override
@@ -28,6 +34,7 @@ class _LocationPickerState extends State<LocationPicker> {
   static const LatLng _defaultLocation = LatLng(0.3476, 32.5825);
 
   LatLng? _selectedLocation;
+  LatLng? _searchBiasLocation;
   String _address = 'Search for home, office, or landmark';
   GoogleMapController? _mapController;
   final LocationService _locationService = LocationService();
@@ -35,8 +42,8 @@ class _LocationPickerState extends State<LocationPicker> {
   final TextEditingController _apartmentSuiteController =
       TextEditingController();
 
-  final String _placesSessionToken =
-      DateTime.now().microsecondsSinceEpoch.toString();
+  final String _placesSessionToken = DateTime.now().microsecondsSinceEpoch
+      .toString();
   Timer? _searchDebounce;
   int _searchRequestId = 0;
   List<PlaceSuggestion> _suggestions = const [];
@@ -45,10 +52,12 @@ class _LocationPickerState extends State<LocationPicker> {
   bool _isLocating = false;
   bool _isConfirming = false;
   bool _canShowUserLocation = false;
+  bool _searchEditedByUser = false;
 
   @override
   void initState() {
     super.initState();
+    final hasInitialLatLng = widget.initialLatLng != null;
     if (widget.initialApartmentSuite != null) {
       _apartmentSuiteController.text = widget.initialApartmentSuite!;
     }
@@ -58,6 +67,15 @@ class _LocationPickerState extends State<LocationPicker> {
     }
     if (widget.initialLatLng != null) {
       _selectedLocation = widget.initialLatLng;
+      _searchBiasLocation = widget.initialLatLng;
+    }
+
+    if (widget.useCurrentLocationByDefault &&
+        (widget.preferCurrentLocation || !hasInitialLatLng)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _getCurrentUserLocation(showError: !hasInitialLatLng);
+      });
     }
   }
 
@@ -75,6 +93,7 @@ class _LocationPickerState extends State<LocationPicker> {
     final query = value.trim();
 
     setState(() {
+      _searchEditedByUser = true;
       _searchError = null;
       if (_selectedLocation != null && query != _address.trim()) {
         _selectedLocation = null;
@@ -104,6 +123,8 @@ class _LocationPickerState extends State<LocationPicker> {
       final results = await _locationService.searchPlaces(
         query,
         sessionToken: _placesSessionToken,
+        latitude: _searchBiasLocation?.latitude,
+        longitude: _searchBiasLocation?.longitude,
       );
       if (!mounted || requestId != _searchRequestId) return;
       setState(() {
@@ -143,7 +164,9 @@ class _LocationPickerState extends State<LocationPicker> {
       if (!mounted) return;
       _searchController.text = details.address;
       setState(() {
+        _searchEditedByUser = false;
         _selectedLocation = location;
+        _searchBiasLocation = location;
         _address = details.address;
         _suggestions = const [];
         _isSearching = false;
@@ -159,7 +182,10 @@ class _LocationPickerState extends State<LocationPicker> {
     }
   }
 
-  Future<void> _getCurrentUserLocation() async {
+  Future<void> _getCurrentUserLocation({
+    bool showError = true,
+    bool userInitiated = false,
+  }) async {
     if (_isLocating) return;
 
     setState(() {
@@ -171,8 +197,17 @@ class _LocationPickerState extends State<LocationPicker> {
       final Position position = await _locationService.getCurrentLocation();
       final location = LatLng(position.latitude, position.longitude);
       if (!mounted) return;
+      if (!userInitiated && _searchEditedByUser) {
+        setState(() {
+          _searchBiasLocation = location;
+          _canShowUserLocation = true;
+        });
+        return;
+      }
       setState(() {
+        _searchEditedByUser = false;
         _selectedLocation = location;
+        _searchBiasLocation = location;
         _canShowUserLocation = true;
         _address = 'Getting address...';
         _suggestions = const [];
@@ -182,11 +217,15 @@ class _LocationPickerState extends State<LocationPicker> {
     } catch (e) {
       debugPrint('Error getting location: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not get current location. Search manually instead.'),
-        ),
-      );
+      if (showError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not get current location. Search manually instead.',
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLocating = false);
     }
@@ -200,6 +239,7 @@ class _LocationPickerState extends State<LocationPicker> {
     if (!mounted) return;
     _searchController.text = address;
     setState(() {
+      _searchEditedByUser = false;
       _address = address;
     });
   }
@@ -235,7 +275,9 @@ class _LocationPickerState extends State<LocationPicker> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a suggested place or enter a clearer address.'),
+          content: Text(
+            'Please select a suggested place or enter a clearer address.',
+          ),
         ),
       );
     } finally {
@@ -246,7 +288,9 @@ class _LocationPickerState extends State<LocationPicker> {
   void _selectMapLocation(LatLng location) {
     FocusScope.of(context).unfocus();
     setState(() {
+      _searchEditedByUser = false;
       _selectedLocation = location;
+      _searchBiasLocation = location;
       _suggestions = const [];
       _searchError = null;
       _address = 'Getting address...';
@@ -260,7 +304,8 @@ class _LocationPickerState extends State<LocationPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final canConfirm = _selectedLocation != null ||
+    final canConfirm =
+        _selectedLocation != null ||
         _searchController.text.trim().isNotEmpty && !_isConfirming;
 
     return Column(
@@ -295,10 +340,7 @@ class _LocationPickerState extends State<LocationPicker> {
                 top: 12,
                 left: 16,
                 right: 16,
-                child: SafeArea(
-                  bottom: false,
-                  child: _buildSearchPanel(),
-                ),
+                child: SafeArea(bottom: false, child: _buildSearchPanel()),
               ),
               Positioned(
                 bottom: 20,
@@ -338,7 +380,10 @@ class _LocationPickerState extends State<LocationPicker> {
             style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w700),
             decoration: InputDecoration(
               hintText: 'Search home, office, or landmark',
-              hintStyle: GoogleFonts.lato(fontSize: 13, color: Colors.grey[500]),
+              hintStyle: GoogleFonts.lato(
+                fontSize: 13,
+                color: Colors.grey[500],
+              ),
               prefixIcon: const Icon(Icons.search, size: 20),
               suffixIcon: _isSearching
                   ? const Padding(
@@ -350,14 +395,14 @@ class _LocationPickerState extends State<LocationPicker> {
                       ),
                     )
                   : _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            _onSearchChanged('');
-                          },
-                        )
-                      : null,
+                  ? IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        _onSearchChanged('');
+                      },
+                    )
+                  : null,
               filled: true,
               fillColor: const Color(0xFFF8FAF8),
               border: OutlineInputBorder(
@@ -372,7 +417,9 @@ class _LocationPickerState extends State<LocationPicker> {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: _isLocating ? null : _getCurrentUserLocation,
+            onPressed: _isLocating
+                ? null
+                : () => _getCurrentUserLocation(userInitiated: true),
             icon: _isLocating
                 ? const SizedBox(
                     height: 16,
@@ -380,7 +427,9 @@ class _LocationPickerState extends State<LocationPicker> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.my_location, size: 18),
-            label: Text(_isLocating ? 'Finding location...' : 'Use current location'),
+            label: Text(
+              _isLocating ? 'Finding location...' : 'Use current location',
+            ),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF2E7D32),
               side: const BorderSide(color: Color(0xFF2E7D32)),
@@ -472,7 +521,8 @@ class _LocationPickerState extends State<LocationPicker> {
           ),
           const SizedBox(height: 4),
           Text(
-            _selectedLocation == null && _searchController.text.trim().isNotEmpty
+            _selectedLocation == null &&
+                    _searchController.text.trim().isNotEmpty
                 ? _searchController.text.trim()
                 : _address,
             maxLines: 2,
@@ -489,9 +539,15 @@ class _LocationPickerState extends State<LocationPicker> {
             style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               labelText: 'Apartment, Suite, Plot, or Floor (Optional)',
-              labelStyle: GoogleFonts.lato(fontSize: 12, color: Colors.grey[600]),
+              labelStyle: GoogleFonts.lato(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
               hintText: 'e.g. Apt 3B, Plot 14, or Blue gate near shop',
-              hintStyle: GoogleFonts.lato(fontSize: 12, color: Colors.grey[400]),
+              hintStyle: GoogleFonts.lato(
+                fontSize: 12,
+                color: Colors.grey[400],
+              ),
               prefixIcon: const Icon(Icons.apartment_outlined, size: 20),
               filled: true,
               fillColor: const Color(0xFFF8FAF8),
@@ -526,7 +582,7 @@ class _LocationPickerState extends State<LocationPicker> {
                       color: Colors.white,
                     ),
                   )
-                : const Text('Confirm Location'),
+                : Text(widget.confirmButtonLabel),
           ),
         ],
       ),

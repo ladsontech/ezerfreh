@@ -1,13 +1,18 @@
 import 'package:ezer_fresh/src/core/providers/order_provider.dart';
+import 'package:ezer_fresh/src/core/providers/user_provider.dart';
 import 'package:ezer_fresh/src/data/services/order_service.dart';
 import 'package:ezer_fresh/src/domain/models/order_model.dart';
 import 'package:ezer_fresh/src/domain/models/order_status.dart';
+import 'package:ezer_fresh/src/presentation/widgets/order/order_detail_card.dart';
 import 'package:ezer_fresh/src/presentation/widgets/order/order_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+/// Simplified, clean admin Orders screen. Every order card is the shared
+/// [OrderDetailCard] — the exact same widget the rider dashboard uses — so
+/// admins see everything a rider sees (contact info, full address, items,
+/// delivery timeline). The footer adds admin-only controls: full status
+/// override and rider assignment.
 class AdminOrdersScreen extends ConsumerStatefulWidget {
   final bool isTab;
   const AdminOrdersScreen({super.key, this.isTab = false});
@@ -24,10 +29,7 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
     'Pending',
     'Processing',
     'Ready for Pickup',
-    'Assigned',
-    'Picked Up',
-    'On the Way',
-    'Arrived',
+    'Out for Delivery',
     'Completed',
     'Cancelled',
   ];
@@ -35,8 +37,13 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(adminOrdersProvider);
+    final ridersAsync = ref.watch(allUsersProvider);
+    final riders = (ridersAsync.asData?.value ?? [])
+        .where((user) => user.role == 'rider')
+        .toList();
+
     final content = ordersAsync.when(
-      data: _buildOrders,
+      data: (orders) => _buildOrders(orders, riders),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(child: Text('Error: $error')),
     );
@@ -49,10 +56,9 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
     );
   }
 
-  Widget _buildOrders(List<OrderModel> orders) {
-    final filtered = _filter == 'All'
-        ? orders
-        : orders.where((order) => order.orderStatus.label == _filter).toList();
+  Widget _buildOrders(List<OrderModel> orders, List<AppUser> riders) {
+    final filtered = _filterOrders(orders);
+    final riderNames = {for (final rider in riders) rider.id: rider.name};
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(adminOrdersProvider),
@@ -65,8 +71,31 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _OrdersSummary(orders: orders),
-                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'All Orders',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.grey.shade800,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${orders.length} total',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   OrderStatusChipBar(
                     selected: _filter,
                     options: _filters,
@@ -78,31 +107,36 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
                   else
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final wide = constraints.maxWidth >= 900;
-                        if (!wide) {
-                          return Column(
-                            children: filtered
-                                .map(
-                                  (order) => _AdminOrderCard(
+                        final cards = filtered
+                            .map(
+                              (order) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: OrderDetailCard(
+                                  order: order,
+                                  itemsExpandedByDefault: false,
+                                  assignedRiderLabel: order.riderId != null
+                                      ? (riderNames[order.riderId] ??
+                                            'Unknown rider')
+                                      : null,
+                                  footer: _AdminCardFooter(
                                     order: order,
-                                    onStatusChanged: _updateStatus,
+                                    riders: riders,
                                   ),
-                                )
-                                .toList(),
-                          );
-                        }
+                                ),
+                              ),
+                            )
+                            .toList();
+
+                        final wide = constraints.maxWidth >= 900;
+                        if (!wide) return Column(children: cards);
 
                         return Wrap(
                           spacing: 12,
-                          runSpacing: 12,
-                          children: filtered
+                          children: cards
                               .map(
-                                (order) => SizedBox(
+                                (card) => SizedBox(
                                   width: (constraints.maxWidth - 12) / 2,
-                                  child: _AdminOrderCard(
-                                    order: order,
-                                    onStatusChanged: _updateStatus,
-                                  ),
+                                  child: card,
                                 ),
                               )
                               .toList(),
@@ -118,348 +152,180 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
     );
   }
 
-  Future<void> _updateStatus(OrderModel order, OrderStatus status) async {
-    if (order.orderStatus == status) return;
+  List<OrderModel> _filterOrders(List<OrderModel> orders) {
+    return switch (_filter) {
+      'All' => orders,
+      'Pending' =>
+        orders.where((o) => o.orderStatus == OrderStatus.pending).toList(),
+      'Processing' =>
+        orders.where((o) => o.orderStatus == OrderStatus.processing).toList(),
+      'Ready for Pickup' =>
+        orders
+            .where((o) => o.orderStatus == OrderStatus.readyForPickup)
+            .toList(),
+      'Out for Delivery' =>
+        orders.where((o) => o.orderStatus.isDeliveryPhase).toList(),
+      'Completed' =>
+        orders.where((o) => o.orderStatus == OrderStatus.completed).toList(),
+      'Cancelled' =>
+        orders.where((o) => o.orderStatus == OrderStatus.cancelled).toList(),
+      _ => orders,
+    };
+  }
+}
 
+/// Admin-only footer: full status override plus rider assignment. Assigning
+/// a rider doesn't touch status — it just writes `riderId`, reusing
+/// `OrderService.updateStatus`'s existing support for that (see
+/// `order_service.dart`), so no new backend call was needed.
+class _AdminCardFooter extends ConsumerStatefulWidget {
+  final OrderModel order;
+  final List<AppUser> riders;
+
+  const _AdminCardFooter({required this.order, required this.riders});
+
+  @override
+  ConsumerState<_AdminCardFooter> createState() => _AdminCardFooterState();
+}
+
+class _AdminCardFooterState extends ConsumerState<_AdminCardFooter> {
+  bool _updating = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final order = widget.order;
+    // Guard against DropdownButtonFormField's assertion error if the
+    // assigned rider no longer exists in the current riders list (deleted
+    // account, role changed away from "rider", etc.).
+    final currentRiderId = widget.riders.any((r) => r.id == order.riderId)
+        ? order.riderId
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<OrderStatus>(
+          key: ValueKey('status-${order.id}-${order.status}'),
+          initialValue: order.orderStatus,
+          decoration: InputDecoration(
+            labelText: 'Status',
+            isDense: true,
+            prefixIcon: const Icon(Icons.sync_alt_outlined, size: 18),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
+          ),
+          items: OrderStatus.adminFlow
+              .map(
+                (item) => DropdownMenuItem(
+                  value: item,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(item.icon, size: 16, color: item.color),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(item.label, overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: _updating
+              ? null
+              : (value) {
+                  if (value != null) _updateStatus(value);
+                },
+        ),
+        if (widget.riders.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            key: ValueKey('rider-${order.id}-$currentRiderId'),
+            initialValue: currentRiderId,
+            decoration: InputDecoration(
+              labelText: 'Assign rider',
+              isDense: true,
+              prefixIcon: const Icon(
+                Icons.delivery_dining_outlined,
+                size: 18,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+            ),
+            hint: const Text('Unassigned'),
+            items: widget.riders
+                .map(
+                  (rider) => DropdownMenuItem(
+                    value: rider.id,
+                    child: Text(
+                      rider.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: _updating
+                ? null
+                : (value) {
+                    if (value != null) _assignRider(value);
+                  },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _updateStatus(OrderStatus status) async {
+    if (status == widget.order.orderStatus) return;
+    setState(() => _updating = true);
     try {
-      await ref.read(orderServiceProvider).updateStatus(order.id, status);
+      await ref.read(orderServiceProvider).updateStatus(widget.order.id, status);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Order status successfully updated to ${status.label}.'),
-        ),
+        SnackBar(content: Text('Order status updated to ${status.label}.')),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Update failed: $error')));
+    } finally {
+      if (mounted) setState(() => _updating = false);
     }
   }
-}
 
-class _OrdersSummary extends StatelessWidget {
-  final List<OrderModel> orders;
-
-  const _OrdersSummary({required this.orders});
-
-  @override
-  Widget build(BuildContext context) {
-    final active = orders.where((o) => o.orderStatus.isActive).length;
-    final inDelivery = orders
-        .where((o) => o.orderStatus.isDeliveryPhase)
-        .length;
-    final revenue = orders
-        .where((o) => o.orderStatus != OrderStatus.cancelled)
-        .fold<double>(0, (sum, o) => sum + o.totalAmount);
-
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        _Pill(
-          icon: Icons.receipt_long_outlined,
-          label: 'Total',
-          value: '${orders.length}',
-        ),
-        _Pill(icon: Icons.bolt_outlined, label: 'Active', value: '$active'),
-        _Pill(
-          icon: Icons.delivery_dining_outlined,
-          label: 'Delivery',
-          value: '$inDelivery',
-        ),
-        _Pill(
-          icon: Icons.payments_outlined,
-          label: 'Revenue',
-          value: 'UGX ${NumberFormat.compact().format(revenue)}',
-        ),
-      ],
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _Pill({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 210),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: const Color(0xFF2E7D32)),
-            const SizedBox(width: 6),
-            Text(
-              '$label: ',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            Flexible(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AdminOrderCard extends StatefulWidget {
-  final OrderModel order;
-  final void Function(OrderModel order, OrderStatus status) onStatusChanged;
-
-  const _AdminOrderCard({required this.order, required this.onStatusChanged});
-
-  @override
-  State<_AdminOrderCard> createState() => _AdminOrderCardState();
-}
-
-class _AdminOrderCardState extends State<_AdminOrderCard> {
-  bool _expanded = false;
-
-  Future<void> _callCustomer(String phone) async {
-    final uri = Uri(scheme: 'tel', path: phone);
+  Future<void> _assignRider(String riderId) async {
+    setState(() => _updating = true);
     try {
-      await launchUrl(uri);
-    } catch (_) {
+      await ref
+          .read(orderServiceProvider)
+          .updateStatus(
+            widget.order.id,
+            widget.order.orderStatus,
+            riderId: riderId,
+          );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open dialer.')),
-      );
+      final rider = widget.riders.firstWhere((r) => r.id == riderId);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Assigned to ${rider.name}.')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Assignment failed: $error')));
+    } finally {
+      if (mounted) setState(() => _updating = false);
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final order = widget.order;
-    final status = order.orderStatus;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: _cardDecoration(
-        borderColor: status.color.withValues(alpha: 0.22),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(8),
-            child: Row(
-              children: [
-                Icon(status.icon, color: status.color),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Show customer name as primary identifier
-                      Text(
-                        order.displayName,
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                      ),
-                      Text(
-                        '${order.shortId} · ${DateFormat.yMMMd().add_jm().format(order.createdAt)}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: OrderStatusBadge(status: status, compact: true),
-                ),
-                Icon(
-                  _expanded ? Icons.expand_less : Icons.expand_more,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-
-          // Customer contact info section
-          if (order.hasContactInfo || (order.customerEmail?.isNotEmpty == true)) ...[
-            const SizedBox(height: 8),
-            _CustomerContactSection(
-              phone: order.customerPhone,
-              email: order.customerEmail,
-              onCall: order.hasContactInfo ? () => _callCustomer(order.customerPhone!) : null,
-            ),
-          ],
-
-          const SizedBox(height: 10),
-          Text(
-            '${order.totalItems} items · UGX ${NumberFormat('#,##0').format(order.totalAmount)}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-          ),
-          if (order.fullAddress != null) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    order.fullAddress!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12.5),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (_expanded) ...[
-            const Divider(height: 24),
-            ...order.items.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${item.quantity}x ${item.name}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Text(
-                        'UGX ${NumberFormat('#,##0').format(item.price * item.quantity)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<OrderStatus>(
-              initialValue: status,
-              decoration: const InputDecoration(
-                labelText: 'Update status',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              items: OrderStatus.adminFlow
-                  .map(
-                    (item) =>
-                        DropdownMenuItem(value: item, child: Text(item.label)),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) widget.onStatusChanged(order, value);
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// Reusable widget showing customer phone + email with a call button
-class _CustomerContactSection extends StatelessWidget {
-  final String? phone;
-  final String? email;
-  final VoidCallback? onCall;
-
-  const _CustomerContactSection({
-    required this.phone,
-    required this.email,
-    this.onCall,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFEFEFEF)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (phone != null && phone!.isNotEmpty)
-            Row(
-              children: [
-                const Icon(Icons.phone_outlined, size: 16, color: Colors.black87),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    phone!,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                if (onCall != null)
-                  SizedBox(
-                    height: 32,
-                    child: OutlinedButton.icon(
-                      onPressed: onCall,
-                      icon: const Icon(Icons.call, size: 14),
-                      label: const Text('Call'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF2E7D32),
-                        side: const BorderSide(color: Color(0xFF2E7D32)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          if (email != null && email!.isNotEmpty) ...[
-            if (phone != null && phone!.isNotEmpty) const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.email_outlined, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    email!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
   }
 }
 
@@ -480,19 +346,4 @@ class _EmptyOrders extends StatelessWidget {
       ),
     );
   }
-}
-
-BoxDecoration _cardDecoration({Color? borderColor}) {
-  return BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(color: borderColor ?? const Color(0xFFE8ECE8)),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.03),
-        blurRadius: 10,
-        offset: const Offset(0, 3),
-      ),
-    ],
-  );
 }

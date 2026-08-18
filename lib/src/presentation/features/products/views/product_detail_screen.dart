@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ezer_fresh/src/domain/models/product_model.dart';
 import 'package:ezer_fresh/src/core/providers/providers.dart';
+import 'package:ezer_fresh/src/presentation/widgets/responsive_layout.dart';
 import 'package:ezer_fresh/src/presentation/widgets/sticky_cart_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,13 +32,16 @@ class ProductDetailScreen extends ConsumerWidget {
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: Column(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Hero(
                   tag: 'product-${product.id}',
                   child: AspectRatio(
-                    aspectRatio: 1.3,
+                    aspectRatio: 1.0,
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
@@ -127,13 +131,20 @@ class ProductDetailScreen extends ConsumerWidget {
                   ),
                 ),
               ],
+                ),
+              ),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 16,
             right: 16,
             bottom: 20,
-            child: StickyCartBar(bottomOffset: 0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: const StickyCartBar(bottomOffset: 0),
+              ),
+            ),
           ),
         ],
       ),
@@ -183,16 +194,11 @@ class ProductDetailScreen extends ConsumerWidget {
       width: double.infinity,
       height: 54,
       child: ElevatedButton(
+        // No confirmation snackbar: the sticky cart bar at the bottom of
+        // this screen updates its count and total immediately, which is the
+        // feedback that actually matters.
         onPressed: () {
           ref.read(cartProvider.notifier).addItem(product);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${product.name} added to cart!'),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              backgroundColor: const Color(0xFF2E7D32),
-            ),
-          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2E7D32),
