@@ -327,7 +327,7 @@ class _DesktopSideRail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(currentUserProvider);
+    final userAsync = ref.watch(authStateProvider);
     final user = userAsync.value;
     final role = ref.watch(userRoleProvider).value ?? 'customer';
 
