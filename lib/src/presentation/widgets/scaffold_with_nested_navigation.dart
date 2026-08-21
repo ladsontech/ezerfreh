@@ -312,7 +312,7 @@ class _CartBadge extends StatelessWidget {
   }
 }
 
-class _DesktopSideRail extends StatelessWidget {
+class _DesktopSideRail extends ConsumerWidget {
   final List<_NavItem> destinations;
   final int selectedIndex;
   final ValueChanged<int> onTap;
@@ -326,46 +326,180 @@ class _DesktopSideRail extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(currentUserProvider);
+    final user = userAsync.value;
+    final role = ref.watch(userRoleProvider).value ?? 'customer';
+
     return Container(
-      width: 84,
+      width: 240,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(right: BorderSide(color: Colors.grey.shade200)),
+        border: Border(
+          right: BorderSide(color: const Color(0xFFE8ECE8)),
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 16),
-          SafeArea(
-            bottom: false,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: brandColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  'EF',
-                  style: GoogleFonts.lato(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
+          // Brand Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.eco_rounded, color: Colors.white, size: 26),
                   ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Ezer Fresh',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF1B3D25),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Text(
+                        role == 'admin' ? 'Admin Portal' : (role == 'rider' ? 'Rider App' : 'Farm Direct'),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2E7D32),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 22),
-          ...List.generate(destinations.length, (index) {
-            return _DesktopNavButton(
-              item: destinations[index],
-              isSelected: selectedIndex == index,
-              brandColor: brandColor,
-              onTap: () => onTap(index),
-            );
-          }),
+          const Divider(height: 1, color: Color(0xFFF0F3F0)),
+          const SizedBox(height: 14),
+
+          // Menu Items
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: destinations.length,
+              itemBuilder: (context, index) {
+                return _DesktopNavButton(
+                  item: destinations[index],
+                  isSelected: selectedIndex == index,
+                  brandColor: brandColor,
+                  onTap: () => onTap(index),
+                );
+              },
+            ),
+          ),
+
+          // Bottom Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7FAF7),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE8ECE8)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (user != null) ...[
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: const Color(0xFF2E7D32),
+                        child: Text(
+                          (user.displayName?.isNotEmpty == true
+                                  ? user.displayName![0]
+                                  : (user.phoneNumber?.isNotEmpty == true ? user.phoneNumber![0] : 'U'))
+                              .toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.displayName ?? 'Customer',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF1B3D25),
+                              ),
+                            ),
+                            Text(
+                              role.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.flash_on, color: Color(0xFF2E7D32), size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        '30-45m Delivery',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1B3D25),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Kampala & Entebbe Express',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10.5,
+                      color: const Color(0xFF7A7F7A),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -396,64 +530,79 @@ class _DesktopNavButtonState extends ConsumerState<_DesktopNavButton> {
   Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
     final cartCount = cartItems.fold<int>(0, (sum, item) => sum + item.quantity);
-    final color = widget.isSelected
-        ? widget.brandColor
-        : (_isHovered ? Colors.black87 : const Color(0xFF7A7F7A));
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: Material(
-        color: Colors.white,
-        child: InkWell(
-          onTap: widget.onTap,
-          child: Container(
-            width: 84,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: widget.isSelected
-                      ? widget.brandColor
-                      : Colors.transparent,
-                  width: 3,
-                ),
-              ),
+    final isSelected = widget.isSelected;
+    final activeBg = isSelected
+        ? const Color(0xFFE8F5E9)
+        : (_isHovered ? const Color(0xFFF7FAF7) : Colors.transparent);
+    final activeColor = isSelected
+        ? const Color(0xFF2E7D32)
+        : (_isHovered ? const Color(0xFF1B3D25) : const Color(0xFF5A605A));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: activeBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFC8E6C9) : Colors.transparent,
             ),
-            child: Column(
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(
-                      widget.isSelected
-                          ? widget.item.selectedIcon
-                          : widget.item.icon,
-                      color: color,
-                      size: 22,
-                    ),
-                    if (widget.item.label == 'Cart' && cartCount > 0)
-                      Positioned(
-                        right: -7,
-                        top: -7,
-                        child: _CartBadge(count: cartCount),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lato(
-                    fontSize: 9,
-                    fontWeight:
-                        widget.isSelected ? FontWeight.w900 : FontWeight.w700,
-                    color: color,
-                    letterSpacing: 0,
+          ),
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    isSelected ? widget.item.selectedIcon : widget.item.icon,
+                    color: activeColor,
+                    size: 22,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      widget.item.label,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: activeColor,
+                      ),
+                    ),
+                  ),
+                  if (widget.item.label == 'Cart' && cartCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$cartCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  else if (isSelected)
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2E7D32),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -473,3 +622,4 @@ class _NavItem {
     required this.label,
   });
 }
+

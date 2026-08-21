@@ -30,6 +30,15 @@
     ],
     "headers": [
       {
+        "source": "**/*.@(js|html|json)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
         "source": "**/*.@(png|jpg|jpeg|gif|webp|svg|ico)",
         "headers": [
           {

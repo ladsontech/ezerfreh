@@ -52,7 +52,7 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildPromoBanner(),
+                      _buildPromoBanner(context),
                       const SizedBox(height: 24),
                       _buildSectionHeader('Categories'),
                       const SizedBox(height: 16),
