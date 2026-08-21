@@ -241,8 +241,118 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPromoBanner() {
-    return const _BannerCarousel();
+  Widget _buildPromoBanner(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width >= 900;
+    if (!isDesktop) {
+      return const _BannerCarousel();
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Expanded(
+          flex: 6,
+          child: _BannerCarousel(),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 3,
+          child: SizedBox(
+            height: 240,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.flash_on, color: Colors.amber, size: 20),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Express Delivery',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Farm to door in 30-45 mins',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFFE082)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.eco, color: Color(0xFFE65100), size: 20),
+                            const SizedBox(width: 4),
+                            Text(
+                              '100% Organic Fresh',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFFB71C1C),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Crisp veggies harvested daily',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF5D4037),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildSectionHeader(String title, [VoidCallback? onSeeAll]) {
