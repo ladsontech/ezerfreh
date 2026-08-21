@@ -276,8 +276,10 @@ class NotificationService {
       }
     }
 
+    // Capture the context before the async gap above; after awaiting
+    // Firestore the widget tree may have changed so we must check mounted.
     final context = rootNavigatorKey.currentContext;
-    if (context == null) return;
+    if (context == null || !context.mounted) return;
     GoRouter.of(context).go(path);
   }
 

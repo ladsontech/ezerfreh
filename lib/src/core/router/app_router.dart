@@ -52,61 +52,66 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final roleState = ref.read(userRoleProvider);
       final onboardingState = ref.read(onboardingCompletedProvider);
 
-      // 1. If onboarding or auth is loading, don't redirect yet
-      if (onboardingState.isLoading || authState.isLoading) {
-        return null;
-      }
-
-      final isOnboardingCompleted = onboardingState.value ?? false;
       final loc = state.matchedLocation;
 
-      // 2. Enforce onboarding first — except on web, which is a
-      // guest-first, browse-immediately experience. The mobile-app-style
-      // onboarding slideshow doesn't fit a website visitor's expectations,
-      // so web always treats onboarding as already done and lands
-      // straight on the home page. Native apps still show it once.
-      final skipOnboarding = kIsWeb || isOnboardingCompleted;
-      if (!skipOnboarding) {
-        if (loc != '/onboarding') {
-          return '/onboarding';
+      // 1. On web: skip onboarding entirely. Web is a guest-first,
+      // browse-immediately experience — onboarding slideshows don't fit
+      // website visitor expectations. We don't wait for onboardingState
+      // to finish loading on web either, since we'll always skip it.
+      if (!kIsWeb) {
+        // Native: wait for onboarding state to load before acting.
+        if (onboardingState.isLoading) return null;
+
+        final isOnboardingCompleted = onboardingState.value ?? false;
+        if (!isOnboardingCompleted) {
+          if (loc != '/onboarding') return '/onboarding';
+          return null;
+        } else if (loc == '/onboarding') {
+          return '/';
         }
-        return null;
       } else if (loc == '/onboarding') {
-        // Onboarding already done (or skipped on web) — don't linger there.
-        return '/';
+        // Web: never show onboarding.
+        return '/home';
+      }
+
+      // 2. Wait for auth to be known before acting on it.
+      if (authState.isLoading) {
+        return null;
       }
 
       final isAuth = authState.value != null;
 
       // 3. Handle guest (unauthenticated) users
       if (!isAuth) {
-        // Allow list for guests. `/cart` is included deliberately: guests
-        // can browse and build a cart freely, and CartScreen itself only
-        // prompts for sign-in at the moment they tap "Checkout" — the
-        // router shouldn't gate them out before that screen ever gets a
-        // chance to show that prompt.
+        // Allow list for guests. Guests can browse the full app and will
+        // only be prompted to sign in when they take an action that requires
+        // it (e.g. tapping Checkout in the cart). The /orders and /profile
+        // tabs show friendly "sign in" prompts — they must be reachable
+        // without auth so the bottom nav works correctly for guests.
         final allowedGuestRoutes = [
           '/',
           '/login',
           '/home',
           '/cart',
+          '/orders',
+          '/profile',
           '/products',
           '/product-detail',
           '/all-products',
         ];
-        
-        final isAllowed = allowedGuestRoutes.contains(loc) || 
-            loc.startsWith('/products/') || 
+
+        final isAllowed = allowedGuestRoutes.contains(loc) ||
+            loc.startsWith('/products/') ||
             loc.startsWith('/product-detail/');
-        
+
         if (!isAllowed) {
           return '/login';
         }
-        
+
         if (loc == '/') {
           return '/home';
         }
-        
+
         return null;
       }
 

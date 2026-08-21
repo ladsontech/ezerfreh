@@ -119,53 +119,132 @@ class AdminOverviewTab extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 22),
-                  const _SectionTitle('Workspaces'),
-                  const SizedBox(height: 10),
-                  _ResponsiveGrid(
-                    children: [
-                      _ActionTile(
-                        data: _ActionData(
-                          label: 'Inventory',
-                          detail: 'Search and edit products',
-                          icon: Icons.inventory_2_outlined,
-                          color: const Color(0xFF2E7D32),
-                          onTap: () => context.go('/admin/products'),
-                        ),
-                      ),
-                      _ActionTile(
-                        data: _ActionData(
-                          label: 'Add Product',
-                          detail: 'Create a fresh listing',
-                          icon: Icons.add_photo_alternate_outlined,
-                          color: const Color(0xFFFDAA5E),
-                          onTap: () => context.push('/admin/upload'),
-                        ),
-                      ),
-                      _ActionTile(
-                        data: _ActionData(
-                          label: 'Orders',
-                          detail: 'Update fulfillment status',
-                          icon: Icons.receipt_long_outlined,
-                          color: const Color(0xFF0984E3),
-                          onTap: () => context.push('/admin/orders'),
-                        ),
-                      ),
-                      _ActionTile(
-                        data: _ActionData(
-                          label: 'Users',
-                          detail: 'Review account roles',
-                          icon: Icons.people_outline,
-                          color: const Color(0xFF6C5CE7),
-                          onTap: () => context.push('/admin/users'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-                  _RecentOrdersPanel(
-                    orders: orders.take(5).toList(),
-                    loading: loadingOrders,
-                    onViewAll: () => context.push('/admin/orders'),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isDesktop = constraints.maxWidth >= 900;
+                      if (!isDesktop) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const _SectionTitle('Workspaces'),
+                            const SizedBox(height: 10),
+                            _ResponsiveGrid(
+                              children: [
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'Inventory',
+                                    detail: 'Search and edit products',
+                                    icon: Icons.inventory_2_outlined,
+                                    color: const Color(0xFF2E7D32),
+                                    onTap: () => context.go('/admin/products'),
+                                  ),
+                                ),
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'Add Product',
+                                    detail: 'Create a fresh listing',
+                                    icon: Icons.add_photo_alternate_outlined,
+                                    color: const Color(0xFFFDAA5E),
+                                    onTap: () => context.push('/admin/upload'),
+                                  ),
+                                ),
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'Orders',
+                                    detail: 'Update fulfillment status',
+                                    icon: Icons.receipt_long_outlined,
+                                    color: const Color(0xFF0984E3),
+                                    onTap: () => context.push('/admin/orders'),
+                                  ),
+                                ),
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'Users',
+                                    detail: 'Review account roles',
+                                    icon: Icons.people_outline,
+                                    color: const Color(0xFF6C5CE7),
+                                    onTap: () => context.push('/admin/users'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 22),
+                            _RecentOrdersPanel(
+                              orders: orders.take(5).toList(),
+                              loading: loadingOrders,
+                              onViewAll: () => context.push('/admin/orders'),
+                            ),
+                          ],
+                        );
+                      }
+
+                      // Side-by-side desktop layout
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left side: Workspaces & Actions
+                          Expanded(
+                            flex: 5,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const _SectionTitle('Workspaces & Tools'),
+                                const SizedBox(height: 10),
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'Product Catalog',
+                                    detail: 'Search, edit and manage stock levels',
+                                    icon: Icons.inventory_2_outlined,
+                                    color: const Color(0xFF2E7D32),
+                                    onTap: () => context.go('/admin/products'),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'New Product Upload',
+                                    detail: 'Add fresh vegetables, fruits & herbs',
+                                    icon: Icons.add_photo_alternate_outlined,
+                                    color: const Color(0xFFFDAA5E),
+                                    onTap: () => context.push('/admin/upload'),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'Order Dispatch',
+                                    detail: 'Manage fulfillment & rider delivery',
+                                    icon: Icons.receipt_long_outlined,
+                                    color: const Color(0xFF0984E3),
+                                    onTap: () => context.push('/admin/orders'),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                _ActionTile(
+                                  data: _ActionData(
+                                    label: 'Accounts & Roles',
+                                    detail: 'Review customers, riders & admins',
+                                    icon: Icons.people_outline,
+                                    color: const Color(0xFF6C5CE7),
+                                    onTap: () => context.push('/admin/users'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          // Right side: Recent Orders
+                          Expanded(
+                            flex: 6,
+                            child: _RecentOrdersPanel(
+                              orders: orders.take(6).toList(),
+                              loading: loadingOrders,
+                              onViewAll: () => context.push('/admin/orders'),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),

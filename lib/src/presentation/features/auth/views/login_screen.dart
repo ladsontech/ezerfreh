@@ -151,9 +151,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         verificationFailed: (FirebaseAuthException e) {
           if (mounted) {
             setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.message ?? 'Verification failed')),
-            );
+            final msg = e.message ?? 'Verification failed';
+            if (e.code == 'unauthorized-domain' ||
+                msg.toLowerCase().contains('hostname') ||
+                msg.toLowerCase().contains('domain') ||
+                msg.toLowerCase().contains('recaptcha')) {
+              _showDomainAuthHelpDialog('Phone Verification (reCAPTCHA)');
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(msg),
+                  backgroundColor: Colors.red.shade700,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           }
         },
         codeSent: (String verificationId, int? resendToken) {
@@ -178,11 +190,107 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        final errStr = e.toString();
+        if (errStr.toLowerCase().contains('hostname') ||
+            errStr.toLowerCase().contains('domain')) {
+          _showDomainAuthHelpDialog('Phone Verification');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
       }
     }
+  }
+
+  void _showDomainAuthHelpDialog(String providerName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.domain_verification, color: Color(0xFF2E7D32), size: 28),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Domain Authorization',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$providerName requires this domain to be authorized in Firebase Console.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1B3D25),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F8F1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFC8E6C9)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Steps for Firebase Admin:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '1. Open Firebase Console\n'
+                    '2. Go to Authentication → Settings → Authorized domains\n'
+                    '3. Add: ezerfresh-f87af.web.app and your custom domain',
+                    style: TextStyle(fontSize: 12, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Tip: You can immediately sign in or sign up using Email & Password below, or continue as a guest.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _usePhoneAuth = false;
+              });
+            },
+            child: const Text('Use Email & Password'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _verifyOtp() async {
@@ -328,15 +436,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Google sign-in failed')),
-        );
+        final msg = e.message ?? 'Google sign-in failed';
+        if (e.code == 'unauthorized-domain' ||
+            msg.toLowerCase().contains('domain') ||
+            msg.toLowerCase().contains('hostname')) {
+          _showDomainAuthHelpDialog('Google Sign-In');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.red.shade700,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-in failed: $e')),
-        );
+        final errStr = e.toString();
+        if (errStr.toLowerCase().contains('unauthorized-domain') ||
+            errStr.toLowerCase().contains('domain') ||
+            errStr.toLowerCase().contains('hostname')) {
+          _showDomainAuthHelpDialog('Google Sign-In');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Google sign-in failed: $e')),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -352,51 +478,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width >= 700;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF9FAF8),
       body: Stack(
         children: [
-          // Background blobs
+          // Background decorative elements
           Positioned(
             top: -120,
             right: -100,
             child: CircleAvatar(
-              radius: 160,
-              backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.05),
+              radius: 180,
+              backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.06),
             ),
           ),
           Positioned(
             bottom: -80,
             left: -80,
             child: CircleAvatar(
-              radius: 120,
-              backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.04),
+              radius: 140,
+              backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.05),
             ),
           ),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Image.asset(
-                      'assets/ezerlogo.png',
-                      height: 110,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Freshness at your doorstep',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lato(
-                        color: Colors.grey[600],
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 36),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: Container(
+                      padding: isDesktop
+                          ? const EdgeInsets.all(36)
+                          : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: isDesktop
+                          ? BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: const Color(0xFFE8ECE8)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            )
+                          : null,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Image.asset(
+                            'assets/ezerlogo.png',
+                            height: 100,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Freshness at your doorstep',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFF7A7F7A),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
 
                     // Auth Panel
                     if (_usePhoneAuth) _buildPhoneAuthPanel() else _buildEmailAuthPanel(),
@@ -496,9 +645,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
-        ],
+        ),
       ),
-    );
+    ),
+  ],
+),
+);
   }
 
   Widget _buildPhoneAuthPanel() {

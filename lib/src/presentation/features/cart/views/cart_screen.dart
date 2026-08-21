@@ -428,7 +428,7 @@ class CartScreen extends ConsumerWidget {
         ? ref.watch(userProfileProvider(authUser.uid))
         : null;
     final total = ref.read(cartProvider.notifier).total;
-    final itemCount = cartItems.fold<int>(0, (sum, item) => sum + item.quantity);
+    final itemCount = cartItems.fold<int>(0, (acc, item) => acc + item.quantity);
 
     return Scaffold(
       appBar: AppBar(

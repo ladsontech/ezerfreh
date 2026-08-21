@@ -274,8 +274,10 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildCategoryList(BuildContext context, categories) {
+    final isDesktop = MediaQuery.sizeOf(context).width >= 900;
+
     return SizedBox(
-      height: 100,
+      height: isDesktop ? 120 : 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: categories.length,
@@ -284,17 +286,18 @@ class HomeScreen extends ConsumerWidget {
           return GestureDetector(
             onTap: () => context.push('/products', extra: category),
             child: Container(
-              width: 80,
+              width: isDesktop ? 110 : 80,
               margin: const EdgeInsets.only(right: 16),
               child: Column(
                 children: [
                   Container(
-                    height: 64,
-                    width: 64,
+                    height: isDesktop ? 74 : 64,
+                    width: isDesktop ? 74 : 64,
                     padding: const EdgeInsets.all(14),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF0EEE4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0EEE4),
                       shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE5E4DC)),
                     ),
                     child: Image.asset(
                       category.imageUrl,
@@ -305,13 +308,13 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
                     category.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
+                      fontSize: isDesktop ? 13 : 12,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF4A4E4A),
                     ),
@@ -347,17 +350,12 @@ class HomeScreen extends ConsumerWidget {
               crossAxisCount: columns,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              // Matches the fix in product_list_screen.dart — ProductCard's
-              // image is now a square, so this needs the same extra
-              // headroom to avoid a bottom overflow.
-              childAspectRatio: 0.60,
+              childAspectRatio: 0.65,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) => ProductCard(product: products[index]),
-              // Show one full row on wide/web layouts (more columns) so the
-              // "Flash Sales" preview doesn't look sparse next to "See All".
-              childCount: products.length > columns
-                  ? columns
+              childCount: products.length > (columns * 2)
+                  ? (columns * 2)
                   : products.length,
             ),
           ),
@@ -618,10 +616,12 @@ class _BannerCarouselState extends State<_BannerCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width >= 900;
+
     return Column(
       children: [
         SizedBox(
-          height: 160,
+          height: isDesktop ? 240 : 160,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) => setState(() => _currentIndex = index),

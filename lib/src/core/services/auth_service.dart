@@ -32,13 +32,18 @@ class AuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     if (kIsWeb) {
-      // `google_sign_in` v7's `authenticate()` call requires a rendered
-      // Google Identity Services button on web (and a web OAuth client id
-      // this app never configured) — it doesn't work as a plain button
-      // tap. Firebase Auth's own popup flow bridges straight to the
-      // Firebase JS SDK, reuses the Google provider already enabled for
-      // this Firebase project, and needs no extra web-side setup.
-      return _firebaseAuth.signInWithPopup(GoogleAuthProvider());
+      try {
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        return await _firebaseAuth.signInWithPopup(googleProvider);
+      } on FirebaseAuthException catch (e) {
+        debugPrint('Firebase Web Google Sign-In Error [${e.code}]: ${e.message}');
+        rethrow;
+      } catch (e) {
+        debugPrint('Generic Web Google Sign-In Error: $e');
+        rethrow;
+      }
     }
 
     await GoogleSignIn.instance.initialize();
@@ -60,14 +65,27 @@ class AuthService {
     required void Function(String, int?) codeSent,
     required void Function(String) codeAutoRetrievalTimeout,
   }) async {
-    await _firebaseAuth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      verificationCompleted: verificationCompleted,
-      verificationFailed: verificationFailed,
-      codeSent: codeSent,
-      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
-      timeout: const Duration(seconds: 60),
-    );
+    try {
+      await _firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: verificationCompleted,
+        verificationFailed: verificationFailed,
+        codeSent: codeSent,
+        codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+        timeout: const Duration(seconds: 60),
+      );
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Firebase verifyPhoneNumber Error [${e.code}]: ${e.message}');
+      verificationFailed(e);
+    } catch (e) {
+      debugPrint('Generic verifyPhoneNumber Error: $e');
+      verificationFailed(
+        FirebaseAuthException(
+          code: 'unknown-error',
+          message: e.toString(),
+        ),
+      );
+    }
   }
 
   Future<UserCredential> signInWithPhoneCredential(PhoneAuthCredential credential) async {

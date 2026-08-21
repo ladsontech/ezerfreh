@@ -146,13 +146,6 @@ class _OrderDetailCardState extends State<OrderDetailCard> {
             const SizedBox(height: 12),
             _InfoRow(
               icon: Icons.phone_outlined,
-              child: Text(
-                order.customerPhone!,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
               trailing: order.hasContactInfo
                   ? TextButton.icon(
                       onPressed: () => _callCustomer(order.customerPhone!),
@@ -164,6 +157,13 @@ class _OrderDetailCardState extends State<OrderDetailCard> {
                       ),
                     )
                   : null,
+              child: Text(
+                order.customerPhone!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             if (order.customerEmail?.isNotEmpty ?? false) ...[
               const SizedBox(height: 6),
