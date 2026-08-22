@@ -63,7 +63,6 @@ class _LocationPickerState extends State<LocationPicker> {
     }
     if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
       _address = widget.initialAddress!;
-      _searchController.text = widget.initialAddress!;
     }
     if (widget.initialLatLng != null) {
       _selectedLocation = widget.initialLatLng;
